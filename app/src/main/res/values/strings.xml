@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Gyro</string>
+
+    <!-- Navigation -->
+    <string name="tool_compass">Compass</string>
+    <string name="tool_speed">Speed</string>
+    <string name="tool_tilt">Tilt</string>
+    <string name="tool_compass_subtitle">Heading</string>
+    <string name="tool_speed_subtitle">GPS speed</string>
+    <string name="tool_tilt_subtitle">Inclinometer</string>
+    <string name="nav_settings">Settings</string>
+    <string name="nav_back">Back</string>
+
+    <!-- Shared -->
+    <string name="value_unknown">—</string>
+    <string name="action_allow_location">Allow location</string>
+    <string name="action_open_settings">Open settings</string>
+    <string name="action_reset">Reset</string>
+    <string name="degrees_value">%1$s°</string>
+
+    <!-- Compass -->
+    <string name="compass_magnetic_north">Magnetic north</string>
+    <string name="compass_true_north">True north</string>
+    <string name="compass_true_north_locating">Locating for true north…</string>
+    <string name="compass_true_north_fallback">Magnetic north · true north unavailable</string>
+    <string name="compass_waiting">Waiting for sensor…</string>
+    <string name="compass_calibrate">Calibration needed</string>
+    <string name="compass_interference">Magnetic interference</string>
+    <string name="compass_heading_description">Heading %1$d degrees, %2$s, relative to %3$s</string>
+    <string name="compass_stat_field">Field</string>
+    <string name="compass_stat_field_value">%1$d µT</string>
+    <string name="compass_stat_accuracy">Accuracy</string>
+    <string name="compass_stat_declination">Declination</string>
+    <string name="accuracy_high">High</string>
+    <string name="accuracy_medium">Medium</string>
+    <string name="accuracy_low">Low</string>
+    <string name="accuracy_unreliable">Unreliable</string>
+    <string name="calibration_title">Calibrate your compass</string>
+    <string name="calibration_body">Move your phone through a figure of eight a few times, turning it as you go. This lets the magnetometer re-learn its offsets.</string>
+    <string name="calibration_animation_description">Animation: trace a figure of eight with the phone</string>
+    <string name="interference_title">Magnetic interference</string>
+    <string name="interference_body">The magnetic field here is unusually strong or weak. Move away from metal, magnets, speakers, laptops and car dashboards, then calibrate.</string>
+    <string name="compass_unavailable_title">No compass sensor</string>
+    <string name="compass_unavailable_body">This device has no magnetometer, so it cannot measure direction.</string>
+    <string name="true_north_permission_title">Location needed for true north</string>
+    <string name="true_north_permission_body">True north uses your approximate location once to look up the local magnetic declination. It stays on this device. Until then, the compass shows magnetic north.</string>
+    <string name="true_north_blocked_body">Location permission is turned off for Gyro. Allow approximate location in system settings to use true north.</string>
+    <string name="action_use_magnetic">Use magnetic north</string>
+
+    <string-array name="cardinal_names">
+        <item>North</item>
+        <item>North-east</item>
+        <item>East</item>
+        <item>South-east</item>
+        <item>South</item>
+        <item>South-west</item>
+        <item>West</item>
+        <item>North-west</item>
+    </string-array>
+
+    <!-- Speedometer -->
+    <string name="speed_status_checking">Checking access…</string>
+    <string name="speed_status_searching">Searching for GPS…</string>
+    <string name="speed_status_gps">GPS locked</string>
+    <string name="speed_status_weak">Weak GPS fix</string>
+    <string name="speed_status_stationary">Stationary</string>
+    <string name="speed_status_signal_lost">GPS signal lost</string>
+    <string name="speed_status_location_off">Location is off</string>
+    <string name="speed_status_permission">Location access needed</string>
+    <string name="speed_status_precise">Precise location needed</string>
+    <string name="speed_status_unsupported">No GPS on this device</string>
+    <string name="speed_caption_stationary">Not moving</string>
+    <string name="speed_caption_no_signal">No signal</string>
+    <string name="speed_caption_waiting">Waiting for a fix</string>
+    <string name="speed_caption_low_accuracy">Low accuracy</string>
+    <string name="speed_description">Speed %1$s %2$s</string>
+    <string name="speed_description_none">No speed reading</string>
+    <string name="speed_stat_top">Top speed</string>
+    <string name="speed_stat_accuracy">Accuracy</string>
+    <string name="speed_accuracy_value">±%1$s %2$s</string>
+    <string name="speed_reset_top_description">Reset top speed</string>
+    <string name="unit_kmh">Kilometres per hour</string>
+    <string name="unit_mph">Miles per hour</string>
+    <string name="unit_mps">Metres per second</string>
+    <string name="unit_kn">Knots</string>
+    <string name="speed_gps_note">Speed comes from GPS. It works best outdoors with a clear view of the sky, and may be inaccurate or unavailable indoors, in tunnels or between tall buildings.</string>
+    <string name="permission_title">Allow location for speed</string>
+    <string name="permission_body">Gyro reads your speed from GPS only while this screen is open. Your location is never stored or shared.</string>
+    <string name="permission_blocked_title">Location access is off</string>
+    <string name="permission_blocked_body">Location permission was denied. To use the speedometer, allow precise location for Gyro in system settings.</string>
+    <string name="precise_title">Precise location needed</string>
+    <string name="precise_body">Approximate location cannot measure speed. Allow precise location to use the speedometer.</string>
+    <string name="action_allow_precise">Use precise location</string>
+    <string name="location_off_title">Location is turned off</string>
+    <string name="location_off_body">Turn on location services to measure speed with GPS.</string>
+    <string name="action_location_settings">Location settings</string>
+    <string name="unsupported_speed_title">No GPS available</string>
+    <string name="unsupported_speed_body">This device has no location hardware that can measure speed.</string>
+
+    <!-- Tilt -->
+    <string name="tilt_status_waiting">Waiting for sensor…</string>
+    <string name="tilt_status_level">Level</string>
+    <string name="tilt_mode_surface">Surface mode</string>
+    <string name="tilt_mode_edge">Edge mode</string>
+    <string name="tilt_stat_roll">Left / right</string>
+    <string name="tilt_stat_pitch">Front / back</string>
+    <string name="tilt_stat_angle">Edge angle</string>
+    <string name="tilt_reference_value">Reference: %1$s</string>
+    <string name="tilt_roll_right_up">Right side high</string>
+    <string name="tilt_roll_left_up">Left side high</string>
+    <string name="tilt_pitch_top_up">Top high</string>
+    <string name="tilt_pitch_bottom_up">Bottom high</string>
+    <string name="tilt_axis_level">Level</string>
+    <string name="tilt_rotated_clockwise">Clockwise</string>
+    <string name="tilt_rotated_counter">Counter-clockwise</string>
+    <string name="tilt_description_surface">Left-right %1$s degrees, front-back %2$s degrees</string>
+    <string name="tilt_description_edge">Edge angle %1$s degrees</string>
+    <string name="tilt_description_level">, level</string>
+    <string name="tilt_set_zero">Set zero</string>
+    <string name="tilt_custom_zero">Your zero</string>
+    <string name="tilt_true_level">True level</string>
+    <string name="tilt_hint_surface">Lay the phone on a surface. Stand it on an edge for spirit-level mode.</string>
+    <string name="tilt_hint_edge">Rest one edge of the phone on the surface you are checking.</string>
+    <string name="tilt_accelerometer_note">No gravity sensor: using the accelerometer, so hold the phone still for accurate readings.</string>
+    <string name="tilt_unavailable_title">No motion sensor</string>
+    <string name="tilt_unavailable_body">This device has no accelerometer, so it cannot measure tilt.</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_theme">Theme</string>
+    <string name="theme_system">System</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_black">Black</string>
+    <string name="theme_night">Night</string>
+    <string name="theme_system_summary">Follows the devices system theme. Either dark or light.</string>
+    <string name="theme_dark_summary">Clean on your eyes at night, a soft black scheme.</string>
+    <string name="theme_light_summary">Clean on your eyes at day, a bright white scheme.</string>
+    <string name="theme_black_summary">Pure black backgrounds. Easiest on OLED screens and battery.</string>
+    <string name="theme_night_summary">Red on black, so the screen will not spoil your night vision.</string>
+    <string name="settings_accent">Accent colour</string>
+    <string name="settings_accent_night">Night uses red only, so accents are paused.</string>
+    <string name="accent_teal">Teal</string>
+    <string name="accent_blue">Blue</string>
+    <string name="accent_indigo">Indigo</string>
+    <string name="accent_violet">Violet</string>
+    <string name="accent_rose">Rose</string>
+    <string name="accent_amber">Amber</string>
+    <string name="accent_fuchsia">Fuchsia</string>
+    <string name="accent_lime">Lime</string>
+    <string name="accent_green">Green</string>
+    <string name="accent_mocha">Mocha</string>
+    <string name="accent_graphite">Graphite</string>
+    <string name="accent_wallpaper">Wallpaper</string>
+    <string name="settings_instruments">Instruments</string>
+    <string name="settings_speed_unit">Speed unit</string>
+    <string name="settings_north">North reference</string>
+    <string name="settings_north_summary">True north corrects for magnetic declination using your approximate location.</string>
+    <string name="north_magnetic">Magnetic</string>
+    <string name="north_true">True</string>
+    <string name="settings_keep_screen_on">Keep screen on</string>
+    <string name="settings_keep_screen_on_summary">Stop the display sleeping while Gyro is open</string>
+    <string name="settings_feedback">Feedback</string>
+    <string name="settings_haptics">Haptic feedback</string>
+    <string name="settings_haptics_summary">Ticks at N, E, S and W, and when the level is found</string>
+    <string name="settings_tilt">Tilt meter</string>
+    <string name="settings_tilt_zero">Custom zero</string>
+    <string name="settings_tilt_zero_set">Readings are relative to your saved orientation</string>
+    <string name="settings_tilt_zero_unset">Measuring against true level</string>
+    <string name="settings_about">About</string>
+    <string name="settings_version">Version %1$s</string>
+    <string name="settings_version_info">[Click to view release page]</string>
+    <string name="settings_privacy">Private by design</string>
+    <string name="settings_privacy_summary">No analytics. Sensor and location data never leave this device. Gyro only goes online when you check for updates.</string>
+    <string name="settings_developer">Developed by nyphrux</string>
+    <string name="settings_developer_info">A 16-year-old developer from England. [Click to view my GitHub]</string>
+
+    <!-- In-app updates -->
+    <string name="update_check">Check for updates</string>
+    <string name="update_checking">Checking for updates…</string>
+    <string name="update_available_cd">Update available</string>
+    <string name="update_up_to_date">You\'re on the latest version (%1$s).</string>
+    <string name="update_check_failed">Couldn\'t reach GitHub. Check your connection and try again.</string>
+    <string name="update_sheet_overline">Update available</string>
+    <string name="update_sheet_title">Gyro %1$s</string>
+    <string name="update_sheet_current">You have %1$s</string>
+    <string name="update_sheet_current_size">You have %1$s · %2$s download</string>
+    <string name="update_whats_new">What\'s new</string>
+    <string name="update_no_changelog">See the release page for details.</string>
+    <string name="update_downloading">Downloading…</string>
+    <string name="update_download_failed">Download failed. Check your connection and try again.</string>
+    <string name="update_install_permission">Allow Gyro to install apps, then come back here to finish the update.</string>
+    <string name="update_no_apk">This release has no APK attached. Get it from the release page.</string>
+    <string name="update_action_later">Later</string>
+    <string name="update_action_cancel">Cancel</string>
+    <string name="update_action_download">Download and install</string>
+    <string name="update_action_retry">Try again</string>
+    <string name="update_action_install">Install</string>
+    <string name="update_action_open_page">Open release page</string>
+</resources>
