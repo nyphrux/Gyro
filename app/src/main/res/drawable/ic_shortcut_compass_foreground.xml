@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Launcher shortcut foreground: the compass glyph, scaled into the adaptive icon's safe zone. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group android:translateX="30" android:translateY="30" android:scaleX="2" android:scaleY="2">
+        <path android:strokeColor="#FFE6F7FA" android:strokeWidth="2" android:strokeLineCap="round" android:strokeLineJoin="round" android:fillColor="#00000000" android:pathData="M3,12a9,9 0 1,0 18,0a9,9 0 1,0 -18,0" />
+        <path android:fillColor="#FFE6F7FA" android:pathData="M15.9,8.1L13.3,13.3L8.1,15.9L10.7,10.7Z" />
+    </group>
+</vector>

@@ -9,3 +9,9 @@
 /captures/
 .externalNativeBuild/
 .cxx/
+commit.txt
+
+# Release signing: never commit the keystore or its passwords.
+/keystore.properties
+*.jks
+*.keystore

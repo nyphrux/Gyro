@@ -39,12 +39,13 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.gyro.app.R
+import com.gyro.app.core.tilt.SlopeUnit
 import com.gyro.app.core.tilt.TiltMath
 import com.gyro.app.core.tilt.TiltReading
-import com.gyro.app.ui.common.formatDegrees
 import com.gyro.app.ui.common.rememberAnimatedAngle
 import com.gyro.app.ui.common.rememberAnimatedOffset
 import com.gyro.app.ui.common.rememberSampledState
+import com.gyro.app.ui.common.slopeText
 import com.gyro.app.ui.theme.GyroMotion
 import com.gyro.app.ui.theme.GyroThemeColors
 import com.gyro.app.ui.theme.Readout
@@ -146,7 +147,7 @@ private const val BUBBLE_RADIUS_FRACTION = 0.15f
  * turned so it stays readable whichever edge the phone stands on.
  */
 @Composable
-fun EdgeLevel(reading: () -> TiltReading?, size: Dp, modifier: Modifier = Modifier) {
+fun EdgeLevel(reading: () -> TiltReading?, size: Dp, modifier: Modifier = Modifier, unit: SlopeUnit = SlopeUnit.DEGREES) {
     val scheme = MaterialTheme.colorScheme
     val semantic = GyroThemeColors.current
     val isLevel by remember { derivedStateOf { reading()?.isLevel == true } }
@@ -227,7 +228,7 @@ fun EdgeLevel(reading: () -> TiltReading?, size: Dp, modifier: Modifier = Modifi
         ) {
             Column(Modifier.padding(horizontal = 20.dp, vertical = 10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    text = deviation?.let { stringResource(R.string.degrees_value, formatDegrees(it)) } ?: stringResource(R.string.value_unknown),
+                    text = deviation?.let { slopeText(it, unit, signed = false) } ?: stringResource(R.string.value_unknown),
                     style = Readout.large,
                     color = if (isLevel) semantic.success else scheme.onSurface,
                 )

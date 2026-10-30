@@ -10,6 +10,10 @@ data class LocationSample(
     val speedAccuracyMetersPerSecond: Float?,
     val horizontalAccuracyMeters: Float?,
     val elapsedRealtimeNanos: Long,
+    /** Direction of travel from GNSS, degrees clockwise from true north, when the fix carries one. */
+    val bearingDegrees: Float? = null,
+    /** 68% confidence bearing accuracy in degrees, when reported. */
+    val bearingAccuracyDegrees: Float? = null,
 )
 
 sealed interface LocationEvent {
@@ -51,6 +55,10 @@ data class SpeedMeasurement(
     val accuracyMetersPerSecond: Float?,
     val isStationary: Boolean,
     val isLowAccuracy: Boolean,
+    /** GNSS direction of travel (true north), or null when not moving fast enough to trust it. */
+    val courseDegrees: Float? = null,
+    /** When the underlying fix was taken (monotonic clock), for integrating distance. */
+    val elapsedRealtimeNanos: Long = 0L,
 )
 
 sealed interface SpeedSignal {
@@ -83,10 +91,20 @@ data class SpeedometerUiState(
     val unit: SpeedUnit = SpeedUnit.KILOMETRES_PER_HOUR,
     /** Full-scale value of the gauge in [unit]; auto-ranged by [GaugeScale]. */
     val gaugeScale: Float = GaugeScale.minimum,
+    /** GNSS direction of travel (true north) while moving; null otherwise. */
+    val courseDegrees: Float? = null,
+    val trip: TripStats = TripStats(),
+    /** Speed alert threshold, or null when the alert is off. */
+    val alertMetersPerSecond: Float? = null,
+    /** True while the current speed is above [alertMetersPerSecond] (with hysteresis). */
+    val isOverAlert: Boolean = false,
 ) {
     val displaySpeed: Float? get() = speedMetersPerSecond?.let(unit::fromMetersPerSecond)
     val displayTopSpeed: Float get() = unit.fromMetersPerSecond(topSpeedMetersPerSecond)
     val displayAccuracy: Float? get() = accuracyMetersPerSecond?.let(unit::fromMetersPerSecond)
+    val displayAlert: Float? get() = alertMetersPerSecond?.let(unit::fromMetersPerSecond)
+    val displayDistance: Double get() = unit.distanceFromMeters(trip.distanceMeters)
+    val displayAverageSpeed: Float? get() = trip.averageMetersPerSecond?.let(unit::fromMetersPerSecond)
 
     /** True for the states where the location pipeline is running. */
     val isTracking: Boolean
@@ -99,6 +117,8 @@ data class SpeedometerUiState(
             signal: SpeedSignal?,
             unit: SpeedUnit,
             topSpeedMetersPerSecond: Float,
+            trip: TripStats = TripStats(),
+            alertMetersPerSecond: Float? = null,
         ): SpeedometerUiState {
             val status = when {
                 !supported -> SpeedStatus.UNSUPPORTED
@@ -121,6 +141,9 @@ data class SpeedometerUiState(
                 isLowAccuracy = measurement?.isLowAccuracy ?: false,
                 topSpeedMetersPerSecond = topSpeedMetersPerSecond,
                 unit = unit,
+                courseDegrees = measurement?.courseDegrees?.takeIf { status == SpeedStatus.MOVING },
+                trip = trip,
+                alertMetersPerSecond = alertMetersPerSecond,
             )
         }
     }

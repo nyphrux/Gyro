@@ -53,6 +53,7 @@ fun SpeedGauge(state: SpeedometerUiState, size: Dp, modifier: Modifier = Modifie
     val arcColor by animateColorAsState(
         when {
             state.displaySpeed == null -> scheme.outline
+            state.isOverAlert -> scheme.error
             state.isLowAccuracy -> semantic.warning
             else -> scheme.primary
         },
@@ -62,6 +63,8 @@ fun SpeedGauge(state: SpeedometerUiState, size: Dp, modifier: Modifier = Modifie
     val textMeasurer = rememberTextMeasurer(cacheSize = 48)
     val tickLabelStyle = Readout.dial.copy(color = scheme.onSurfaceVariant)
     val majorStep = GaugeScale.majorTickStep(state.gaugeScale)
+    val alertValue = state.displayAlert
+    val alertColor = scheme.error
 
     val reading = state.displaySpeed
     val readingText = reading?.let { formatSpeed(it, state.unit) } ?: stringResource(R.string.value_unknown)
@@ -69,6 +72,7 @@ fun SpeedGauge(state: SpeedometerUiState, size: Dp, modifier: Modifier = Modifie
         state.status == SpeedStatus.STATIONARY -> stringResource(R.string.speed_caption_stationary)
         state.status == SpeedStatus.SIGNAL_LOST -> stringResource(R.string.speed_caption_no_signal)
         state.status == SpeedStatus.SEARCHING -> stringResource(R.string.speed_caption_waiting)
+        state.isOverAlert -> stringResource(R.string.speed_caption_over_alert)
         state.isLowAccuracy -> stringResource(R.string.speed_caption_low_accuracy)
         else -> null
     }
@@ -111,6 +115,20 @@ fun SpeedGauge(state: SpeedometerUiState, size: Dp, modifier: Modifier = Modifie
                     topLeft = topLeft,
                     size = arcSize,
                     style = Stroke(stroke, cap = StrokeCap.Round),
+                )
+            }
+            // Speed alert threshold: a short bar across the track, when it is on the dial.
+            if (alertValue != null && alertValue <= currentScale) {
+                val a = Math.toRadians((START_ANGLE + SWEEP_ANGLE * (alertValue / currentScale)).toDouble())
+                val ca = cos(a).toFloat()
+                val sa = sin(a).toFloat()
+                val half = stroke / 2f + 4.dp.toPx()
+                drawLine(
+                    color = alertColor,
+                    start = Offset(center.x + ca * (radius - half), center.y + sa * (radius - half)),
+                    end = Offset(center.x + ca * (radius + half), center.y + sa * (radius + half)),
+                    strokeWidth = 3.dp.toPx(),
+                    cap = StrokeCap.Round,
                 )
             }
             // Knob at the tip marks the exact reading.
@@ -168,7 +186,11 @@ fun SpeedGauge(state: SpeedometerUiState, size: Dp, modifier: Modifier = Modifie
                 Text(
                     text = caption,
                     style = MaterialTheme.typography.labelLarge,
-                    color = if (state.isLowAccuracy) semantic.warning else scheme.primary,
+                    color = when {
+                        state.isOverAlert -> scheme.error
+                        state.isLowAccuracy -> semantic.warning
+                        else -> scheme.primary
+                    },
                 )
             }
         }

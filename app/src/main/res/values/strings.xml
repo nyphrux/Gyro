@@ -47,6 +47,26 @@
     <string name="true_north_permission_body">True north uses your approximate location once to look up the local magnetic declination. It stays on this device. Until then, the compass shows magnetic north.</string>
     <string name="true_north_blocked_body">Location permission is turned off for Gyro. Allow approximate location in system settings to use true north.</string>
     <string name="action_use_magnetic">Use magnetic north</string>
+    <string name="action_hide_sun">Hide the sun</string>
+
+    <string name="bearing_label">Bearing</string>
+    <string name="bearing_off">Off</string>
+    <string name="bearing_hint">Point and lock to follow it</string>
+    <string name="bearing_on_course">On course</string>
+    <string name="bearing_turn_right">Turn right %1$d°</string>
+    <string name="bearing_turn_left">Turn left %1$d°</string>
+    <string name="bearing_lock">Lock current bearing</string>
+    <string name="bearing_clear">Clear bearing</string>
+
+    <string name="sun_label">Sun</string>
+    <string name="sun_above_horizon">%1$s° above horizon</string>
+    <string name="sun_below_horizon">%1$s° below horizon</string>
+    <string name="sun_locating">Locating…</string>
+    <string name="sun_needs_location">Needs location</string>
+    <string name="sun_unavailable">Location unavailable</string>
+    <string name="sun_permission_title">Location needed for the sun</string>
+    <string name="sun_permission_body">The sun marker uses your approximate location once to work out where the sun is. It stays on this device.</string>
+    <string name="sun_blocked_body">Location permission is turned off for Gyro. Allow approximate location in system settings to show the sun.</string>
 
     <string-array name="cardinal_names">
         <item>North</item>
@@ -74,12 +94,37 @@
     <string name="speed_caption_no_signal">No signal</string>
     <string name="speed_caption_waiting">Waiting for a fix</string>
     <string name="speed_caption_low_accuracy">Low accuracy</string>
+    <string name="speed_caption_over_alert">Over your alert speed</string>
+    <string name="speed_status_over_alert">Over alert speed</string>
     <string name="speed_description">Speed %1$s %2$s</string>
     <string name="speed_description_none">No speed reading</string>
     <string name="speed_stat_top">Top speed</string>
     <string name="speed_stat_accuracy">Accuracy</string>
     <string name="speed_accuracy_value">±%1$s %2$s</string>
     <string name="speed_reset_top_description">Reset top speed</string>
+    <string name="speed_stat_trip">Trip</string>
+    <string name="speed_reset_trip_description">Reset trip</string>
+    <string name="speed_stat_average">Average</string>
+    <string name="speed_average_supporting">While moving</string>
+    <string name="speed_stat_moving_time">Moving time</string>
+    <string name="speed_stat_course">Direction</string>
+    <string name="speed_course_supporting">From GPS</string>
+    <string name="speed_course_waiting">Shown when moving</string>
+    <string name="speed_stat_alert">Speed alert</string>
+    <string name="speed_alert_off">Off</string>
+    <string name="speed_alert_hint">Beep and buzz above a speed you choose</string>
+    <string name="speed_alert_on">Beeps and buzzes above this speed</string>
+    <string name="speed_alert_over">You are over this speed</string>
+    <string name="speed_alert_edit">Set speed alert</string>
+    <string name="alert_dialog_title">Speed alert</string>
+    <string name="alert_dialog_body">Gyro will beep and vibrate each time you go over this speed while the speedometer is open.</string>
+    <string name="alert_dialog_field">Alert above</string>
+    <string name="alert_dialog_set">Set</string>
+    <string name="alert_dialog_off">Turn off</string>
+    <string name="hud_open">Head-up display</string>
+    <string name="hud_mirror">Mirror</string>
+    <string name="hud_unmirror">Unmirror</string>
+    <string name="hud_close">Close</string>
     <string name="unit_kmh">Kilometres per hour</string>
     <string name="unit_mph">Miles per hour</string>
     <string name="unit_mps">Metres per second</string>
@@ -122,6 +167,18 @@
     <string name="tilt_true_level">True level</string>
     <string name="tilt_hint_surface">Lay the phone on a surface. Stand it on an edge for spirit-level mode.</string>
     <string name="tilt_hint_edge">Rest one edge of the phone on the surface you are checking.</string>
+    <string name="tilt_status_held">Reading held</string>
+    <string name="tilt_hold">Hold reading</string>
+    <string name="tilt_release">Release</string>
+    <string name="slope_unit_degrees">Degrees</string>
+    <string name="slope_unit_percent">Percent</string>
+    <string name="slope_unit_ratio">Ratio</string>
+    <string name="slope_unit_degrees_short">°</string>
+    <string name="slope_unit_percent_short" formatted="false">%</string>
+    <string name="slope_unit_ratio_short">1:n</string>
+    <string name="slope_percent_value">%1$s%%</string>
+    <string name="slope_ratio_value">1:%1$s</string>
+    <string name="slope_ratio_level">1:∞</string>
     <string name="tilt_accelerometer_note">No gravity sensor: using the accelerometer, so hold the phone still for accurate readings.</string>
     <string name="tilt_unavailable_title">No motion sensor</string>
     <string name="tilt_unavailable_body">This device has no accelerometer, so it cannot measure tilt.</string>
@@ -135,7 +192,7 @@
     <string name="theme_dark">Dark</string>
     <string name="theme_black">Black</string>
     <string name="theme_night">Night</string>
-    <string name="theme_system_summary">Follows the devices system theme. Either dark or light.</string>
+    <string name="theme_system_summary">Follows your device\'s system theme, light or dark.</string>
     <string name="theme_dark_summary">Clean on your eyes at night, a soft black scheme.</string>
     <string name="theme_light_summary">Clean on your eyes at day, a bright white scheme.</string>
     <string name="theme_black_summary">Pure black backgrounds. Easiest on OLED screens and battery.</string>
@@ -160,22 +217,33 @@
     <string name="settings_north_summary">True north corrects for magnetic declination using your approximate location.</string>
     <string name="north_magnetic">Magnetic</string>
     <string name="north_true">True</string>
+    <string name="settings_show_sun">Show the sun</string>
+    <string name="settings_show_sun_summary">Marks the sun\'s direction on the compass, using your approximate location</string>
     <string name="settings_keep_screen_on">Keep screen on</string>
     <string name="settings_keep_screen_on_summary">Stop the display sleeping while Gyro is open</string>
     <string name="settings_feedback">Feedback</string>
     <string name="settings_haptics">Haptic feedback</string>
-    <string name="settings_haptics_summary">Ticks at N, E, S and W, and when the level is found</string>
+    <string name="settings_haptics_summary">Ticks at N, E, S and W, on a locked bearing, and when the level is found</string>
+    <string name="settings_level_tone">Beep when level</string>
+    <string name="settings_level_tone_summary">A short tone when the tilt meter finds level, for when you can\'t see the screen</string>
     <string name="settings_tilt">Tilt meter</string>
+    <string name="settings_slope_unit">Slope unit</string>
     <string name="settings_tilt_zero">Custom zero</string>
     <string name="settings_tilt_zero_set">Readings are relative to your saved orientation</string>
     <string name="settings_tilt_zero_unset">Measuring against true level</string>
     <string name="settings_about">About</string>
     <string name="settings_version">Version %1$s</string>
-    <string name="settings_version_info">[Click to view release page]</string>
+    <string name="settings_version_link">View release notes</string>
     <string name="settings_privacy">Private by design</string>
     <string name="settings_privacy_summary">No analytics. Sensor and location data never leave this device. Gyro only goes online when you check for updates.</string>
     <string name="settings_developer">Developed by nyphrux</string>
-    <string name="settings_developer_info">A 16-year-old developer from England. [Click to view my GitHub]</string>
+    <string name="settings_developer_info">A 16-year-old developer from England.</string>
+    <string name="settings_developer_link">Open GitHub profile</string>
+
+    <!-- Launcher shortcuts -->
+    <string name="shortcut_compass_long">Open the compass</string>
+    <string name="shortcut_speed_long">Open the speedometer</string>
+    <string name="shortcut_tilt_long">Open the tilt meter</string>
 
     <!-- In-app updates -->
     <string name="update_check">Check for updates</string>

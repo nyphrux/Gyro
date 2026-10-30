@@ -84,6 +84,8 @@ class AndroidLocationSource(private val context: Context) : LocationSource {
         speedAccuracyMetersPerSecond = if (hasSpeedAccuracy()) speedAccuracyMetersPerSecond else null,
         horizontalAccuracyMeters = if (hasAccuracy()) accuracy else null,
         elapsedRealtimeNanos = elapsedRealtimeNanos,
+        bearingDegrees = if (hasBearing()) bearing else null,
+        bearingAccuracyDegrees = if (hasBearingAccuracy()) bearingAccuracyDegrees else null,
     )
 
     private companion object {

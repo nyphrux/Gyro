@@ -2,6 +2,7 @@ package com.gyro.app.core.prefs
 
 import com.gyro.app.core.math.Vec3
 import com.gyro.app.core.speed.SpeedUnit
+import com.gyro.app.core.tilt.SlopeUnit
 import kotlinx.coroutines.flow.Flow
 
 /** SYSTEM follows the device; BLACK is pure-black dark for OLED; NIGHT is red-on-black for night vision. */
@@ -20,8 +21,20 @@ data class UserPreferences(
     val northReference: NorthReference = NorthReference.MAGNETIC,
     val hapticsEnabled: Boolean = true,
     val keepScreenOn: Boolean = false,
-    /** Device-frame gravity captured when the user set a custom tilt zero; null = true level. */
+    /**
+     * Device-frame gravity captured when the user set a custom tilt zero; null = true level.
+     * Stored separately and excluded from backups, because it only means anything on this phone.
+     */
     val tiltReference: Vec3? = null,
+    /** Draw the sun's direction on the compass (needs approximate location). */
+    val showSun: Boolean = false,
+    /** Play a short tone when the tilt meter finds level. */
+    val levelTone: Boolean = false,
+    val slopeUnit: SlopeUnit = SlopeUnit.DEGREES,
+    /** Mirror the head-up display so it reads correctly reflected in a windscreen. */
+    val hudMirrored: Boolean = true,
+    /** Speed alert threshold in m/s; null = off. */
+    val speedAlertMetersPerSecond: Float? = null,
 )
 
 /** Persisted user settings. The Android implementation is backed by DataStore. */
@@ -35,4 +48,9 @@ interface PreferencesRepository {
     suspend fun setHapticsEnabled(enabled: Boolean)
     suspend fun setKeepScreenOn(enabled: Boolean)
     suspend fun setTiltReference(reference: Vec3?)
+    suspend fun setShowSun(enabled: Boolean)
+    suspend fun setLevelTone(enabled: Boolean)
+    suspend fun setSlopeUnit(unit: SlopeUnit)
+    suspend fun setHudMirrored(mirrored: Boolean)
+    suspend fun setSpeedAlert(metersPerSecond: Float?)
 }

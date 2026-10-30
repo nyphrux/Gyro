@@ -13,6 +13,7 @@ import com.gyro.app.core.prefs.PreferencesRepository
 import com.gyro.app.core.prefs.ThemeMode
 import com.gyro.app.core.prefs.UserPreferences
 import com.gyro.app.core.speed.SpeedUnit
+import com.gyro.app.core.tilt.SlopeUnit
 import com.gyro.app.core.update.ReleaseInfo
 import com.gyro.app.platform.update.GithubUpdater
 import com.gyro.app.platform.update.UpdateCheck
@@ -73,6 +74,9 @@ class SettingsViewModel(
     fun setHapticsEnabled(enabled: Boolean) = update { repository.setHapticsEnabled(enabled) }
     fun setKeepScreenOn(enabled: Boolean) = update { repository.setKeepScreenOn(enabled) }
     fun resetTiltZero() = update { repository.setTiltReference(null) }
+    fun setShowSun(enabled: Boolean) = update { repository.setShowSun(enabled) }
+    fun setLevelTone(enabled: Boolean) = update { repository.setLevelTone(enabled) }
+    fun setSlopeUnit(unit: SlopeUnit) = update { repository.setSlopeUnit(unit) }
 
     private fun update(block: suspend () -> Unit) {
         viewModelScope.launch { block() }

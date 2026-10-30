@@ -27,6 +27,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -60,11 +61,21 @@ private val NavBarSpace = 96.dp
  * loses state. Tools that are not on screen leave composition, which stops their sensors.
  *
  * Back: Settings → tools; any tool → Compass; Compass → exit.
+ *
+ * [requestedTool] comes from a launcher shortcut; it is applied once and then reported back
+ * through [onToolRequestHandled].
  */
 @Composable
-fun GyroApp(preferences: UserPreferences) {
-    var tool by rememberSaveable { mutableStateOf(Tool.COMPASS) }
+fun GyroApp(preferences: UserPreferences, requestedTool: Tool? = null, onToolRequestHandled: () -> Unit = {}) {
+    var tool by rememberSaveable { mutableStateOf(requestedTool ?: Tool.COMPASS) }
     var showSettings by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(requestedTool) {
+        if (requestedTool != null) {
+            tool = requestedTool
+            showSettings = false
+            onToolRequestHandled()
+        }
+    }
     val haptics = rememberGyroHaptics(preferences.hapticsEnabled)
     val stateHolder = rememberSaveableStateHolder()
 

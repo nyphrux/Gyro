@@ -12,7 +12,6 @@ import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.transformLatest
 import kotlinx.coroutines.flow.update
@@ -28,14 +27,41 @@ class SpeedometerModel(private val source: LocationSource, private val staleTime
     private val topSpeed = MutableStateFlow(0f)
     val topSpeedMetersPerSecond: StateFlow<Float> = topSpeed.asStateFlow()
 
+    private val tripStats = MutableStateFlow(TripStats())
+    val trip: StateFlow<TripStats> = tripStats.asStateFlow()
+
+    /** The persistable part of the state; emits whenever the trip or top speed changes. */
+    val records: Flow<TripRecord> = combine(tripStats, topSpeed) { trip, top -> TripRecord(trip, top) }.distinctUntilChanged()
+
+    private var restored = false
+
     val isAvailable: Boolean get() = source.isAvailable
 
     fun resetTopSpeed() {
         topSpeed.value = 0f
     }
 
+    fun resetTrip() {
+        tripStats.value = TripStats()
+    }
+
+    /**
+     * Brings back a saved trip. Anything measured before the saved copy finished loading is
+     * added on top rather than overwritten. Only the first call has an effect.
+     */
+    fun restore(record: TripRecord) {
+        if (restored) return
+        restored = true
+        tripStats.update { record.trip + it }
+        topSpeed.update { maxOf(it, record.topSpeedMetersPerSecond) }
+    }
+
     @OptIn(ExperimentalCoroutinesApi::class)
-    fun uiState(access: Flow<LocationAccess>, unit: Flow<SpeedUnit>): Flow<SpeedometerUiState> {
+    fun uiState(
+        access: Flow<LocationAccess>,
+        unit: Flow<SpeedUnit>,
+        alertMetersPerSecond: Flow<Float?> = flowOf(null),
+    ): Flow<SpeedometerUiState> {
         val distinctAccess = access.distinctUntilChanged()
         val signals: Flow<SpeedSignal?> = distinctAccess.flatMapLatest { current ->
             if (current == LocationAccess.GRANTED && source.isAvailable) {
@@ -44,18 +70,22 @@ class SpeedometerModel(private val source: LocationSource, private val staleTime
                 flowOf(null)
             }
         }
-        return combine(distinctAccess, signals, unit, topSpeed) { a, s, u, top ->
-            SpeedometerUiState.from(source.isAvailable, a, s, u, top)
-        }.withAutoRangedGauge().distinctUntilChanged()
+        val totals = combine(topSpeed, tripStats, alertMetersPerSecond.distinctUntilChanged()) { top, trip, alert -> Triple(top, trip, alert) }
+        return combine(distinctAccess, signals, unit, totals) { a, s, u, (top, trip, alert) ->
+            SpeedometerUiState.from(source.isAvailable, a, s, u, top, trip, alert)
+        }.withRunningState().distinctUntilChanged()
     }
 
     /**
-     * Carries the gauge range from one state to the next. The range is held while there is no
-     * reading, so a brief signal drop at speed does not collapse and re-expand the dial.
+     * Adds the parts of the state that depend on history:
+     * - the gauge range, carried from one state to the next and held while there is no reading,
+     *   so a brief signal drop at speed does not collapse and re-expand the dial;
+     * - the over-speed flag, whose hysteresis needs the previous state.
      */
-    private fun Flow<SpeedometerUiState>.withAutoRangedGauge(): Flow<SpeedometerUiState> = flow {
+    private fun Flow<SpeedometerUiState>.withRunningState(): Flow<SpeedometerUiState> = flow {
         var scale: Float? = null
         var scaleUnit: SpeedUnit? = null
+        val alert = SpeedAlertDetector()
         collect { state ->
             if (state.unit != scaleUnit) {
                 scale = null
@@ -67,7 +97,8 @@ class SpeedometerModel(private val source: LocationSource, private val staleTime
                 else -> scale ?: GaugeScale.minimum
             }
             scale = next
-            emit(state.copy(gaugeScale = next))
+            val over = if (state.isTracking) alert.update(state.speedMetersPerSecond, state.alertMetersPerSecond) else alert.update(null, null)
+            emit(state.copy(gaugeScale = next, isOverAlert = over))
         }
     }
 
@@ -105,13 +136,24 @@ class SpeedometerModel(private val source: LocationSource, private val staleTime
                 }
             },
         )
-    }.onEach { signal ->
-        if (signal is SpeedSignal.Measured) {
-            val m = signal.measurement
-            // Unreliable fixes are shown (flagged) but never allowed to set a record.
-            if (!m.isStationary && !m.isLowAccuracy) {
-                topSpeed.update { maxOf(it, m.speedMetersPerSecond) }
+    }.withTripAccounting()
+
+    private fun Flow<SpeedSignal>.withTripAccounting(): Flow<SpeedSignal> = flow {
+        // One meter per subscription: a stretch never joins across leaving and re-opening the screen.
+        val meter = TripMeter()
+        collect { signal ->
+            if (signal is SpeedSignal.Measured) {
+                val m = signal.measurement
+                // Unreliable fixes are shown (flagged) but never allowed to set a record.
+                if (!m.isStationary && !m.isLowAccuracy) {
+                    topSpeed.update { maxOf(it, m.speedMetersPerSecond) }
+                }
+                val increment = meter.add(m)
+                if (!increment.isEmpty) tripStats.update { it + increment }
+            } else {
+                meter.interrupt()
             }
+            emit(signal)
         }
     }
 

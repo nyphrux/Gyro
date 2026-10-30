@@ -1,3 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Only user preferences are stored; they are safe to back up. -->
-<full-backup-content />
+<!--
+    Settings are backed up. The device-only store is not: it holds the tilt meter's custom zero
+    (a gravity vector in this phone's sensor frame, wrong on any other phone) and the running trip.
+    The path must match DEVICE_STORE_NAME in DataStorePreferencesRepository.
+-->
+<full-backup-content>
+    <exclude domain="file" path="datastore/gyro_device.preferences_pb" />
+</full-backup-content>

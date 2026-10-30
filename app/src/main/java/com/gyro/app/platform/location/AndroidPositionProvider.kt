@@ -10,33 +10,43 @@ import android.location.LocationManager
 import android.os.CancellationSignal
 import android.os.SystemClock
 import androidx.core.content.ContextCompat
-import com.gyro.app.core.compass.DeclinationProvider
-import com.gyro.app.core.compass.DeclinationResult
+import com.gyro.app.core.compass.GeoPoint
+import com.gyro.app.core.compass.MagneticModel
+import com.gyro.app.core.compass.PositionProvider
+import com.gyro.app.core.compass.PositionResult
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.coroutines.resume
 
 /**
  * Magnetic declination from the World Magnetic Model built into Android ([GeomagneticField]).
+ */
+object AndroidMagneticModel : MagneticModel {
+    override fun declinationDegrees(point: GeoPoint, epochMillis: Long): Float =
+        GeomagneticField(point.latitude.toFloat(), point.longitude.toFloat(), point.altitudeMeters, epochMillis).declination
+}
+
+/**
+ * A one-off approximate position for the compass (true-north declination and the sun marker).
  *
- * Declination varies slowly with position, so an approximate location is plenty: we use the most
- * recent last-known fix if it is reasonably fresh, otherwise request a single current fix.
+ * Both vary slowly with position, so an approximate location is plenty: we use the most recent
+ * last-known fix if it is reasonably fresh, otherwise request a single current fix.
  * No continuous location updates are started for the compass.
  */
-class AndroidDeclinationProvider(private val context: Context) : DeclinationProvider {
+class AndroidPositionProvider(private val context: Context) : PositionProvider {
     private val locationManager: LocationManager = checkNotNull(context.getSystemService(LocationManager::class.java))
 
-    override suspend fun declination(): DeclinationResult {
-        if (!hasAnyLocationPermission()) return DeclinationResult.PermissionRequired
+    override suspend fun position(): PositionResult {
+        if (!hasAnyLocationPermission()) return PositionResult.PermissionRequired
         val location = freshLastKnownLocation() ?: currentLocation() ?: lastKnownLocation()
-            ?: return DeclinationResult.LocationUnavailable
-        val field = GeomagneticField(
-            location.latitude.toFloat(),
-            location.longitude.toFloat(),
-            if (location.hasAltitude()) location.altitude.toFloat() else 0f,
-            System.currentTimeMillis(),
+            ?: return PositionResult.Unavailable
+        return PositionResult.Available(
+            GeoPoint(
+                latitude = location.latitude,
+                longitude = location.longitude,
+                altitudeMeters = if (location.hasAltitude()) location.altitude.toFloat() else 0f,
+            ),
         )
-        return DeclinationResult.Available(field.declination)
     }
 
     private fun hasAnyLocationPermission(): Boolean =

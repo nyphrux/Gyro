@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -25,6 +26,7 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -35,13 +37,14 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gyro.app.R
+import com.gyro.app.core.tilt.SlopeUnit
 import com.gyro.app.core.tilt.TiltAvailability
 import com.gyro.app.core.tilt.TiltMode
 import com.gyro.app.core.tilt.TiltReading
 import com.gyro.app.ui.common.LocalGyroHaptics
-import com.gyro.app.ui.common.formatDegrees
-import com.gyro.app.ui.common.formatSignedDegrees
+import com.gyro.app.ui.common.rememberGyroCues
 import com.gyro.app.ui.common.rememberSampledState
+import com.gyro.app.ui.common.slopeText
 import com.gyro.app.ui.components.Footnote
 import com.gyro.app.ui.components.GroupGap
 import com.gyro.app.ui.components.GroupPosition
@@ -49,6 +52,7 @@ import com.gyro.app.ui.components.IslandStatus
 import com.gyro.app.ui.components.IslandTone
 import com.gyro.app.ui.components.MessagePanel
 import com.gyro.app.ui.components.PanelTone
+import com.gyro.app.ui.components.PillSelector
 import com.gyro.app.ui.components.StatTile
 import com.gyro.app.ui.components.StatusIsland
 import com.gyro.app.ui.components.ToolLayout
@@ -67,26 +71,35 @@ fun TiltScreen(contentPadding: PaddingValues, viewModel: TiltViewModel = viewMod
     // High-rate state: read only through derived state, sampling and draw lambdas.
     val reading: State<TiltReading?> = viewModel.reading.collectAsStateWithLifecycle()
     val hasCustomZero by viewModel.hasCustomZero.collectAsStateWithLifecycle()
+    val isHeld by viewModel.isHeld.collectAsStateWithLifecycle()
+    val slopeUnit by viewModel.slopeUnit.collectAsStateWithLifecycle()
+    val levelTone by viewModel.levelTone.collectAsStateWithLifecycle()
     val haptics = LocalGyroHaptics.current
+    val cues = rememberGyroCues()
+    val toneEnabled by rememberUpdatedState(levelTone)
 
     val mode by remember { derivedStateOf { reading.value?.mode } }
     val isLevel by remember { derivedStateOf { reading.value?.isLevel == true } }
     val hasReading by remember { derivedStateOf { reading.value != null } }
 
-    // Confirm haptic when the level is found (not on first appearance).
-    LaunchedEffect(haptics) {
+    // Confirm haptic (and the optional tone) when the level is found, not on first appearance.
+    // A held reading never changes, so nothing fires while holding.
+    LaunchedEffect(haptics, cues) {
         snapshotFlow { reading.value?.isLevel == true }
             .distinctUntilChanged()
             .drop(1)
             .filter { it }
-            .collect { haptics.confirm() }
+            .collect {
+                haptics.confirm()
+                if (toneEnabled) cues.levelFound()
+            }
     }
 
     val available = viewModel.availability != TiltAvailability.UNAVAILABLE
 
     ToolLayout(
         contentPadding = contentPadding,
-        header = { StatusIsland(tiltIsland(available, hasReading, mode, isLevel)) },
+        header = { StatusIsland(tiltIsland(available, hasReading, mode, isLevel, isHeld)) },
         instrument = { size ->
             if (available) {
                 AnimatedContent(
@@ -99,7 +112,7 @@ fun TiltScreen(contentPadding: PaddingValues, viewModel: TiltViewModel = viewMod
                 ) { current ->
                     when (current) {
                         TiltMode.SURFACE -> BubbleLevel(reading = { reading.value }, size = size)
-                        TiltMode.EDGE -> EdgeLevel(reading = { reading.value }, size = size)
+                        TiltMode.EDGE -> EdgeLevel(reading = { reading.value }, size = size, unit = slopeUnit)
                     }
                 }
             }
@@ -113,7 +126,25 @@ fun TiltScreen(contentPadding: PaddingValues, viewModel: TiltViewModel = viewMod
                     tone = PanelTone.ERROR,
                 )
             } else {
-                TiltReadouts(reading = { reading.value }, mode = mode ?: TiltMode.SURFACE, isLevel = isLevel)
+                PillSelector(
+                    options = SlopeUnit.entries,
+                    selected = slopeUnit,
+                    onSelect = viewModel::setSlopeUnit,
+                    label = { slopeUnitShortLabel(it) },
+                    accessibilityLabel = { slopeUnitName(it) },
+                )
+                TiltReadouts(reading = { reading.value }, mode = mode ?: TiltMode.SURFACE, isLevel = isLevel, unit = slopeUnit)
+                HoldButton(
+                    isHeld = isHeld,
+                    enabled = hasReading,
+                    onClick = {
+                        when (viewModel.toggleHold()) {
+                            true -> haptics.confirm()
+                            false -> haptics.tick()
+                            null -> Unit
+                        }
+                    },
+                )
                 ZeroControls(
                     hasCustomZero = hasCustomZero,
                     canSetZero = hasReading,
@@ -136,9 +167,10 @@ fun TiltScreen(contentPadding: PaddingValues, viewModel: TiltViewModel = viewMod
 }
 
 @Composable
-private fun tiltIsland(available: Boolean, hasReading: Boolean, mode: TiltMode?, isLevel: Boolean): IslandStatus = when {
+private fun tiltIsland(available: Boolean, hasReading: Boolean, mode: TiltMode?, isLevel: Boolean, isHeld: Boolean): IslandStatus = when {
     !available -> IslandStatus(stringResource(R.string.tilt_unavailable_title), IslandTone.ERROR, R.drawable.ic_sensor_off)
     !hasReading -> IslandStatus(stringResource(R.string.tilt_status_waiting), IslandTone.NEUTRAL, pulsing = true)
+    isHeld -> IslandStatus(stringResource(R.string.tilt_status_held), IslandTone.NEUTRAL, R.drawable.ic_hold)
     isLevel -> IslandStatus(stringResource(R.string.tilt_status_level), IslandTone.SUCCESS, R.drawable.ic_check)
     mode == TiltMode.EDGE -> IslandStatus(stringResource(R.string.tilt_mode_edge), IslandTone.ACTIVE, R.drawable.ic_level)
     else -> IslandStatus(stringResource(R.string.tilt_mode_surface), IslandTone.ACTIVE, R.drawable.ic_level)
@@ -146,7 +178,7 @@ private fun tiltIsland(available: Boolean, hasReading: Boolean, mode: TiltMode?,
 
 /** Numeric readouts, sampled at 10 Hz so the digits stay legible. */
 @Composable
-private fun TiltReadouts(reading: () -> TiltReading?, mode: TiltMode, isLevel: Boolean) {
+private fun TiltReadouts(reading: () -> TiltReading?, mode: TiltMode, isLevel: Boolean, unit: SlopeUnit) {
     val sampled by rememberSampledState { reading() }
     val r = sampled
     val unknown = stringResource(R.string.value_unknown)
@@ -157,7 +189,7 @@ private fun TiltReadouts(reading: () -> TiltReading?, mode: TiltMode, isLevel: B
         val roll = r?.rollDegrees
         val pitch = r?.pitchDegrees
         val description = if (roll != null && pitch != null) {
-            stringResource(R.string.tilt_description_surface, formatSignedDegrees(roll), formatSignedDegrees(pitch)) + levelSuffix
+            stringResource(R.string.tilt_description_surface, slopeText(roll, unit, signed = true), slopeText(pitch, unit, signed = true)) + levelSuffix
         } else {
             unknown
         }
@@ -169,7 +201,7 @@ private fun TiltReadouts(reading: () -> TiltReading?, mode: TiltMode, isLevel: B
         ) {
             StatTile(
                 label = stringResource(R.string.tilt_stat_roll),
-                value = roll?.let { stringResource(R.string.degrees_value, formatSignedDegrees(it)) } ?: unknown,
+                value = roll?.let { slopeText(it, unit, signed = true) } ?: unknown,
                 supporting = roll?.let {
                     stringResource(
                         when {
@@ -185,7 +217,7 @@ private fun TiltReadouts(reading: () -> TiltReading?, mode: TiltMode, isLevel: B
             )
             StatTile(
                 label = stringResource(R.string.tilt_stat_pitch),
-                value = pitch?.let { stringResource(R.string.degrees_value, formatSignedDegrees(it)) } ?: unknown,
+                value = pitch?.let { slopeText(it, unit, signed = true) } ?: unknown,
                 supporting = pitch?.let {
                     stringResource(
                         when {
@@ -202,10 +234,10 @@ private fun TiltReadouts(reading: () -> TiltReading?, mode: TiltMode, isLevel: B
         }
     } else {
         val deviation = r?.edgeDeviationDegrees
-        val description = deviation?.let { stringResource(R.string.tilt_description_edge, formatSignedDegrees(it)) + levelSuffix } ?: unknown
+        val description = deviation?.let { stringResource(R.string.tilt_description_edge, slopeText(it, unit, signed = true)) + levelSuffix } ?: unknown
         StatTile(
             label = stringResource(R.string.tilt_stat_angle),
-            value = deviation?.let { stringResource(R.string.degrees_value, formatDegrees(it)) } ?: unknown,
+            value = deviation?.let { slopeText(it, unit, signed = false) } ?: unknown,
             supporting = deviation?.let {
                 stringResource(
                     when {
@@ -221,6 +253,38 @@ private fun TiltReadouts(reading: () -> TiltReading?, mode: TiltMode, isLevel: B
                 .fillMaxWidth()
                 .clearAndSetSemantics { contentDescription = description },
         )
+    }
+}
+
+@Composable
+private fun slopeUnitShortLabel(unit: SlopeUnit): String = stringResource(
+    when (unit) {
+        SlopeUnit.DEGREES -> R.string.slope_unit_degrees_short
+        SlopeUnit.PERCENT -> R.string.slope_unit_percent_short
+        SlopeUnit.RATIO -> R.string.slope_unit_ratio_short
+    },
+)
+
+@Composable
+fun slopeUnitName(unit: SlopeUnit): String = stringResource(
+    when (unit) {
+        SlopeUnit.DEGREES -> R.string.slope_unit_degrees
+        SlopeUnit.PERCENT -> R.string.slope_unit_percent
+        SlopeUnit.RATIO -> R.string.slope_unit_ratio
+    },
+)
+
+/** Freezes the reading so it can be read after taking the phone out of an awkward spot. */
+@Composable
+private fun HoldButton(isHeld: Boolean, enabled: Boolean, onClick: () -> Unit) {
+    FilledTonalButton(onClick = onClick, enabled = enabled || isHeld, modifier = Modifier.fillMaxWidth().height(52.dp)) {
+        Icon(
+            painterResource(if (isHeld) R.drawable.ic_reset else R.drawable.ic_hold),
+            contentDescription = null,
+            modifier = Modifier.size(18.dp),
+        )
+        Spacer(Modifier.width(8.dp))
+        Text(stringResource(if (isHeld) R.string.tilt_release else R.string.tilt_hold))
     }
 }
 

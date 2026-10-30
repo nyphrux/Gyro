@@ -11,6 +11,8 @@ import kotlin.math.abs
  *   Large jumps bypass smoothing entirely.
  * - GNSS speed hovers around a few tenths of a m/s at rest, so readings under
  *   [stationaryThresholdMetersPerSecond] are reported as stationary (0) rather than as motion.
+ * - The GNSS direction of travel is passed on only when moving briskly enough for it to mean
+ *   something and its reported accuracy is reasonable.
  */
 class SpeedProcessor(
     private val stationaryThresholdMetersPerSecond: Float = 0.5f,
@@ -18,6 +20,8 @@ class SpeedProcessor(
     private val jumpThresholdMetersPerSecond: Float = 4f,
     private val lowAccuracySpeedThreshold: Float = 1.5f,
     private val lowAccuracyHorizontalThreshold: Float = 30f,
+    private val courseMinSpeedMetersPerSecond: Float = 1f,
+    private val courseMaxAccuracyDegrees: Float = 30f,
 ) {
     private var smoothed: Float? = null
     private var lastNanos = 0L
@@ -41,11 +45,18 @@ class SpeedProcessor(
         val stationary = next < stationaryThresholdMetersPerSecond
         val lowAccuracy = (sample.speedAccuracyMetersPerSecond ?: 0f) > lowAccuracySpeedThreshold ||
             (sample.horizontalAccuracyMeters ?: 0f) > lowAccuracyHorizontalThreshold
+        // GNSS bearing is noise at walking pace and meaningless at rest.
+        val course = sample.bearingDegrees?.takeIf {
+            !stationary && next >= courseMinSpeedMetersPerSecond && !it.isNaN() &&
+                (sample.bearingAccuracyDegrees ?: 0f) <= courseMaxAccuracyDegrees
+        }
         return SpeedMeasurement(
             speedMetersPerSecond = if (stationary) 0f else next,
             accuracyMetersPerSecond = sample.speedAccuracyMetersPerSecond,
             isStationary = stationary,
             isLowAccuracy = lowAccuracy,
+            courseDegrees = course,
+            elapsedRealtimeNanos = sample.elapsedRealtimeNanos,
         )
     }
 

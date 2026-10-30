@@ -4,7 +4,7 @@
 
     <!--
         Foreground-only location for the speedometer (GPS Doppler speed) and, optionally,
-        a one-off coarse fix for magnetic declination (true north). Android 12+ requires
+        a one-off coarse fix for magnetic declination (true north) and the sun marker. Android 12+ requires
         FINE to be requested together with COARSE so the user can pick precision.
         No background location. Sensor and location data never leave the device.
     -->
@@ -18,6 +18,9 @@
     -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
+    <!-- The speed alert buzzes even when touch feedback is off. Normal permission: granted at install. -->
+    <uses-permission android:name="android.permission.VIBRATE" />
 
     <!-- Sensors are optional so the app still installs on hardware lacking some of them;
          each tool reports missing hardware explicitly at runtime. -->
@@ -55,6 +58,10 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- Long-press launcher shortcuts to Compass, Speed and Tilt. -->
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
         </activity>
 
         <!-- Shares the downloaded update APK (app cache only) with the system package installer. -->

@@ -1,15 +1,11 @@
 package com.gyro.app.ui.settings
 
 import android.content.ActivityNotFoundException
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
-import androidx.lifecycle.compose.LifecycleResumeEffect
-import kotlinx.coroutines.launch
+import android.content.Context
+import android.content.Intent
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer
@@ -18,39 +14,47 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import android.content.Intent
-import android.net.Uri
-import androidx.compose.foundation.clickable
-import androidx.compose.ui.platform.LocalContext
 import com.gyro.app.BuildConfig
 import com.gyro.app.R
 import com.gyro.app.core.prefs.NorthReference
 import com.gyro.app.core.prefs.ThemeMode
 import com.gyro.app.core.prefs.UserPreferences
 import com.gyro.app.core.speed.SpeedUnit
+import com.gyro.app.core.tilt.SlopeUnit
 import com.gyro.app.ui.common.LocalGyroHaptics
 import com.gyro.app.ui.components.GroupGap
 import com.gyro.app.ui.components.GroupPosition
@@ -60,7 +64,8 @@ import com.gyro.app.ui.components.PillSelector
 import com.gyro.app.ui.components.SectionHeader
 import com.gyro.app.ui.components.TopBarIconButton
 import com.gyro.app.ui.speed.unitName
-import androidx.core.net.toUri
+import com.gyro.app.ui.tilt.slopeUnitName
+import kotlinx.coroutines.launch
 
 @Composable
 fun SettingsScreen(onBack: () -> Unit, viewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory)) {
@@ -191,6 +196,13 @@ private fun SettingsContent(prefs: UserPreferences, viewModel: SettingsViewModel
             )
         }
         SwitchItem(
+            position = GroupPosition.MIDDLE,
+            title = stringResource(R.string.settings_show_sun),
+            summary = stringResource(R.string.settings_show_sun_summary),
+            checked = prefs.showSun,
+            onCheckedChange = viewModel::setShowSun,
+        )
+        SwitchItem(
             position = GroupPosition.LAST,
             title = stringResource(R.string.settings_keep_screen_on),
             summary = stringResource(R.string.settings_keep_screen_on_summary),
@@ -200,50 +212,64 @@ private fun SettingsContent(prefs: UserPreferences, viewModel: SettingsViewModel
     }
 
     SectionHeader(stringResource(R.string.settings_feedback))
-    SwitchItem(
-        position = GroupPosition.SINGLE,
-        title = stringResource(R.string.settings_haptics),
-        summary = stringResource(R.string.settings_haptics_summary),
-        checked = prefs.hapticsEnabled,
-        onCheckedChange = viewModel::setHapticsEnabled,
-    )
+    Group {
+        SwitchItem(
+            position = GroupPosition.FIRST,
+            title = stringResource(R.string.settings_haptics),
+            summary = stringResource(R.string.settings_haptics_summary),
+            checked = prefs.hapticsEnabled,
+            onCheckedChange = viewModel::setHapticsEnabled,
+        )
+        SwitchItem(
+            position = GroupPosition.LAST,
+            title = stringResource(R.string.settings_level_tone),
+            summary = stringResource(R.string.settings_level_tone_summary),
+            checked = prefs.levelTone,
+            onCheckedChange = viewModel::setLevelTone,
+        )
+    }
 
     SectionHeader(stringResource(R.string.settings_tilt))
-    GroupedSurface(GroupPosition.SINGLE) {
-        val haptics = LocalGyroHaptics.current
-        ListItem(
-            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-            headlineContent = { Text(stringResource(R.string.settings_tilt_zero), style = MaterialTheme.typography.titleSmall) },
-            supportingContent = {
-                Text(stringResource(if (prefs.tiltReference != null) R.string.settings_tilt_zero_set else R.string.settings_tilt_zero_unset))
-            },
-            trailingContent = {
-                TextButton(
-                    onClick = {
-                        haptics.tick()
-                        viewModel.resetTiltZero()
-                    },
-                    enabled = prefs.tiltReference != null,
-                ) { Text(stringResource(R.string.action_reset)) }
-            },
-        )
+    Group {
+        SelectorItem(GroupPosition.FIRST, stringResource(R.string.settings_slope_unit)) {
+            PillSelector(
+                options = SlopeUnit.entries,
+                selected = prefs.slopeUnit,
+                onSelect = viewModel::setSlopeUnit,
+                label = { slopeUnitName(it) },
+            )
+        }
+        GroupedSurface(GroupPosition.LAST) {
+            val haptics = LocalGyroHaptics.current
+            ListItem(
+                colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                headlineContent = { Text(stringResource(R.string.settings_tilt_zero), style = MaterialTheme.typography.titleSmall) },
+                supportingContent = {
+                    Text(stringResource(if (prefs.tiltReference != null) R.string.settings_tilt_zero_set else R.string.settings_tilt_zero_unset))
+                },
+                trailingContent = {
+                    TextButton(
+                        onClick = {
+                            haptics.tick()
+                            viewModel.resetTiltZero()
+                        },
+                        enabled = prefs.tiltReference != null,
+                    ) { Text(stringResource(R.string.action_reset)) }
+                },
+            )
+        }
     }
 
     SectionHeader(stringResource(R.string.settings_about))
     Group {
         val context = LocalContext.current
-
-        GroupedSurface(GroupPosition.FIRST) {
-            ListItem(
-                modifier = Modifier.clickable {
-                    val intent = Intent(Intent.ACTION_VIEW, "https://github.com/nyphrux/Gyro/releases/tag/${BuildConfig.VERSION_NAME}".toUri())
-                    context.startActivity(intent)
-                },
-                colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                headlineContent = { Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleSmall) },
-                supportingContent = { Text("${stringResource(R.string.settings_version, BuildConfig.VERSION_NAME)} " + stringResource(R.string.settings_version_info)) },
-            )
-        }
+        LinkItem(
+            position = GroupPosition.FIRST,
+            title = stringResource(R.string.app_name),
+            summary = stringResource(R.string.settings_version, BuildConfig.VERSION_NAME),
+            linkDescription = stringResource(R.string.settings_version_link),
+            onClick = { context.openUrl("https://github.com/nyphrux/Gyro/releases/tag/${BuildConfig.VERSION_NAME}") },
+        )
         GroupedSurface(GroupPosition.MIDDLE) {
             ListItem(
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
@@ -251,17 +277,42 @@ private fun SettingsContent(prefs: UserPreferences, viewModel: SettingsViewModel
                 supportingContent = { Text(stringResource(R.string.settings_privacy_summary)) },
             )
         }
-        GroupedSurface(GroupPosition.LAST) {
-            ListItem(
-                modifier = Modifier.clickable {
-                    val intent = Intent(Intent.ACTION_VIEW, "https://github.com/nyphrux".toUri())
-                    context.startActivity(intent)
-                },
-                colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                headlineContent = { Text(stringResource(R.string.settings_developer), style = MaterialTheme.typography.titleSmall) },
-                supportingContent = { Text(stringResource(R.string.settings_developer_info)) },
-            )
-        }
+        LinkItem(
+            position = GroupPosition.LAST,
+            title = stringResource(R.string.settings_developer),
+            summary = stringResource(R.string.settings_developer_info),
+            linkDescription = stringResource(R.string.settings_developer_link),
+            onClick = { context.openUrl("https://github.com/nyphrux") },
+        )
+    }
+}
+
+/** A row that opens a web page: the whole row is the button, with an "opens outside" icon. */
+@Composable
+private fun LinkItem(position: GroupPosition, title: String, summary: String, linkDescription: String, onClick: () -> Unit) {
+    GroupedSurface(position) {
+        ListItem(
+            modifier = Modifier.clickable(onClickLabel = linkDescription, role = Role.Button, onClick = onClick),
+            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+            headlineContent = { Text(title, style = MaterialTheme.typography.titleSmall) },
+            supportingContent = { Text(summary) },
+            trailingContent = {
+                Icon(
+                    painterResource(R.drawable.ic_open_external),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp),
+                )
+            },
+        )
+    }
+}
+
+/** Opens a link in the browser; does nothing (rather than crash) if no browser is installed. */
+private fun Context.openUrl(url: String) {
+    try {
+        startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
+    } catch (_: ActivityNotFoundException) {
     }
 }
 

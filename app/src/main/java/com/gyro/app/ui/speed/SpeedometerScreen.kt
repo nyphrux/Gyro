@@ -3,13 +3,24 @@ package com.gyro.app.ui.speed
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -17,12 +28,16 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gyro.app.R
+import com.gyro.app.core.math.CardinalDirection
 import com.gyro.app.core.speed.SpeedStatus
 import com.gyro.app.core.speed.SpeedUnit
 import com.gyro.app.core.speed.SpeedometerUiState
 import com.gyro.app.ui.common.LocalGyroHaptics
 import com.gyro.app.ui.common.formatAccuracy
+import com.gyro.app.ui.common.formatDistance
+import com.gyro.app.ui.common.formatDuration
 import com.gyro.app.ui.common.formatSpeed
+import com.gyro.app.ui.common.rememberGyroCues
 import com.gyro.app.ui.components.Footnote
 import com.gyro.app.ui.components.GroupGap
 import com.gyro.app.ui.components.GroupPosition
@@ -37,12 +52,32 @@ import com.gyro.app.ui.components.StatusIsland
 import com.gyro.app.ui.components.ToolLayout
 import com.gyro.app.ui.permission.LocationPermissionState
 import com.gyro.app.ui.permission.rememberLocationPermissionState
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filter
+import kotlin.math.roundToInt
 
 @Composable
 fun SpeedometerScreen(contentPadding: PaddingValues, viewModel: SpeedometerViewModel = viewModel(factory = SpeedometerViewModel.Factory)) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val hudMirrored by viewModel.hudMirrored.collectAsStateWithLifecycle()
     val permission = rememberLocationPermissionState(precise = true)
     LaunchedEffect(permission.access) { viewModel.onLocationAccessChanged(permission.access) }
+
+    var showAlertDialog by rememberSaveable { mutableStateOf(false) }
+    var showHud by rememberSaveable { mutableStateOf(false) }
+
+    // Speed alert: beep and buzz each time the speed goes over the threshold (not on first
+    // appearance, so reopening the screen while already over it does not alert again).
+    val cues = rememberGyroCues()
+    val overAlert by rememberUpdatedState(state.isOverAlert)
+    LaunchedEffect(cues) {
+        snapshotFlow { overAlert }
+            .distinctUntilChanged()
+            .drop(1)
+            .filter { it }
+            .collect { cues.speedAlert() }
+    }
 
     ToolLayout(
         contentPadding = contentPadding,
@@ -57,11 +92,37 @@ fun SpeedometerScreen(contentPadding: PaddingValues, viewModel: SpeedometerViewM
                 accessibilityLabel = { unitName(it) },
             )
             if (!PermissionOrServiceIssue(state.status, permission)) {
-                SpeedStats(state, onResetTop = viewModel::resetTopSpeed)
+                SpeedStats(state, onResetTop = viewModel::resetTopSpeed, onResetTrip = viewModel::resetTrip)
+                AlertTile(state, onEdit = { showAlertDialog = true })
+                OutlinedButton(onClick = { showHud = true }, modifier = Modifier.fillMaxWidth().height(52.dp)) {
+                    Icon(painterResource(R.drawable.ic_hud), contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.hud_open))
+                }
             }
             Footnote(icon = R.drawable.ic_info, text = stringResource(R.string.speed_gps_note))
         },
     )
+
+    if (showAlertDialog) {
+        SpeedAlertDialog(
+            currentMetersPerSecond = state.alertMetersPerSecond,
+            unit = state.unit,
+            onSet = {
+                viewModel.setSpeedAlert(it)
+                showAlertDialog = false
+            },
+            onDismiss = { showAlertDialog = false },
+        )
+    }
+    if (showHud) {
+        SpeedHud(
+            state = state,
+            mirrored = hudMirrored,
+            onToggleMirror = { viewModel.setHudMirrored(!hudMirrored) },
+            onClose = { showHud = false },
+        )
+    }
 }
 
 @Composable
@@ -87,10 +148,10 @@ private fun speedIsland(state: SpeedometerUiState): IslandStatus = when (state.s
     SpeedStatus.SEARCHING -> IslandStatus(stringResource(R.string.speed_status_searching), IslandTone.ACTIVE, pulsing = true)
     SpeedStatus.SIGNAL_LOST -> IslandStatus(stringResource(R.string.speed_status_signal_lost), IslandTone.WARNING, R.drawable.ic_warning, pulsing = true)
     SpeedStatus.STATIONARY -> IslandStatus(stringResource(R.string.speed_status_stationary), IslandTone.ACTIVE, R.drawable.ic_location)
-    SpeedStatus.MOVING -> if (state.isLowAccuracy) {
-        IslandStatus(stringResource(R.string.speed_status_weak), IslandTone.WARNING, R.drawable.ic_warning)
-    } else {
-        IslandStatus(stringResource(R.string.speed_status_gps), IslandTone.SUCCESS, R.drawable.ic_location)
+    SpeedStatus.MOVING -> when {
+        state.isOverAlert -> IslandStatus(stringResource(R.string.speed_status_over_alert), IslandTone.ERROR, R.drawable.ic_bell, pulsing = true)
+        state.isLowAccuracy -> IslandStatus(stringResource(R.string.speed_status_weak), IslandTone.WARNING, R.drawable.ic_warning)
+        else -> IslandStatus(stringResource(R.string.speed_status_gps), IslandTone.SUCCESS, R.drawable.ic_location)
     }
 }
 
@@ -149,36 +210,107 @@ private fun PermissionOrServiceIssue(status: SpeedStatus, permission: LocationPe
 }
 
 @Composable
-private fun SpeedStats(state: SpeedometerUiState, onResetTop: () -> Unit) {
+private fun SpeedStats(state: SpeedometerUiState, onResetTop: () -> Unit, onResetTrip: () -> Unit) {
     val haptics = LocalGyroHaptics.current
     val unknown = stringResource(R.string.value_unknown)
+    val unit = state.unit
+
     Row(horizontalArrangement = Arrangement.spacedBy(GroupGap), modifier = Modifier.fillMaxWidth()) {
         StatTile(
             label = stringResource(R.string.speed_stat_top),
-            value = if (state.topSpeedMetersPerSecond > 0f) "${formatSpeed(state.displayTopSpeed, state.unit)} ${state.unit.symbol}" else unknown,
+            value = if (state.topSpeedMetersPerSecond > 0f) "${formatSpeed(state.displayTopSpeed, unit)} ${unit.symbol}" else unknown,
             position = GroupPosition.FIRST,
             modifier = Modifier.weight(1f),
             trailing = {
-                IconButton(
+                ResetButton(
+                    description = stringResource(R.string.speed_reset_top_description),
+                    enabled = state.topSpeedMetersPerSecond > 0f,
                     onClick = {
                         haptics.tick()
                         onResetTop()
                     },
-                    enabled = state.topSpeedMetersPerSecond > 0f,
-                ) {
-                    Icon(
-                        painterResource(R.drawable.ic_reset),
-                        contentDescription = stringResource(R.string.speed_reset_top_description),
-                        modifier = Modifier.size(20.dp),
-                    )
-                }
+                )
             },
         )
         StatTile(
             label = stringResource(R.string.speed_stat_accuracy),
-            value = state.displayAccuracy?.let { stringResource(R.string.speed_accuracy_value, formatAccuracy(it), state.unit.symbol) } ?: unknown,
+            value = state.displayAccuracy?.let { stringResource(R.string.speed_accuracy_value, formatAccuracy(it), unit.symbol) } ?: unknown,
             position = GroupPosition.LAST,
             modifier = Modifier.weight(1f),
         )
+    }
+
+    Row(horizontalArrangement = Arrangement.spacedBy(GroupGap), modifier = Modifier.fillMaxWidth()) {
+        StatTile(
+            label = stringResource(R.string.speed_stat_trip),
+            value = "${formatDistance(state.displayDistance)} ${unit.distanceSymbol}",
+            position = GroupPosition.FIRST,
+            modifier = Modifier.weight(1f),
+            trailing = {
+                ResetButton(
+                    description = stringResource(R.string.speed_reset_trip_description),
+                    enabled = !state.trip.isEmpty,
+                    onClick = {
+                        haptics.tick()
+                        onResetTrip()
+                    },
+                )
+            },
+        )
+        StatTile(
+            label = stringResource(R.string.speed_stat_average),
+            value = state.displayAverageSpeed?.let { "${formatSpeed(it, unit)} ${unit.symbol}" } ?: unknown,
+            supporting = stringResource(R.string.speed_average_supporting),
+            position = GroupPosition.LAST,
+            modifier = Modifier.weight(1f),
+        )
+    }
+
+    Row(horizontalArrangement = Arrangement.spacedBy(GroupGap), modifier = Modifier.fillMaxWidth()) {
+        StatTile(
+            label = stringResource(R.string.speed_stat_moving_time),
+            value = formatDuration(state.trip.movingSeconds),
+            position = GroupPosition.FIRST,
+            modifier = Modifier.weight(1f),
+        )
+        val course = state.courseDegrees
+        StatTile(
+            label = stringResource(R.string.speed_stat_course),
+            value = course?.let { "${it.roundToInt() % 360}° ${CardinalDirection.fromHeading(it).name}" } ?: unknown,
+            supporting = stringResource(if (course != null) R.string.speed_course_supporting else R.string.speed_course_waiting),
+            position = GroupPosition.LAST,
+            modifier = Modifier.weight(1f),
+        )
+    }
+}
+
+@Composable
+private fun AlertTile(state: SpeedometerUiState, onEdit: () -> Unit) {
+    val alert = state.displayAlert
+    StatTile(
+        label = stringResource(R.string.speed_stat_alert),
+        value = alert?.let { "${formatSpeed(it, state.unit)} ${state.unit.symbol}" } ?: stringResource(R.string.speed_alert_off),
+        supporting = stringResource(
+            when {
+                alert == null -> R.string.speed_alert_hint
+                state.isOverAlert -> R.string.speed_alert_over
+                else -> R.string.speed_alert_on
+            },
+        ),
+        valueColor = if (state.isOverAlert) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+        position = GroupPosition.SINGLE,
+        modifier = Modifier.fillMaxWidth(),
+        trailing = {
+            IconButton(onClick = onEdit) {
+                Icon(painterResource(R.drawable.ic_bell), contentDescription = stringResource(R.string.speed_alert_edit), modifier = Modifier.size(20.dp))
+            }
+        },
+    )
+}
+
+@Composable
+private fun ResetButton(description: String, enabled: Boolean, onClick: () -> Unit) {
+    IconButton(onClick = onClick, enabled = enabled) {
+        Icon(painterResource(R.drawable.ic_reset), contentDescription = description, modifier = Modifier.size(20.dp))
     }
 }

@@ -4,14 +4,18 @@ import android.content.Context
 import android.hardware.SensorManager
 import android.hardware.display.DisplayManager
 import com.gyro.app.core.compass.CompassSensorSource
-import com.gyro.app.core.compass.DeclinationProvider
+import com.gyro.app.core.compass.MagneticModel
+import com.gyro.app.core.compass.PositionProvider
 import com.gyro.app.core.prefs.PreferencesRepository
 import com.gyro.app.core.speed.LocationSource
 import com.gyro.app.core.speed.SpeedUnit
+import com.gyro.app.core.speed.TripRepository
 import com.gyro.app.core.tilt.TiltSensorSource
-import com.gyro.app.platform.location.AndroidDeclinationProvider
 import com.gyro.app.platform.location.AndroidLocationSource
+import com.gyro.app.platform.location.AndroidMagneticModel
+import com.gyro.app.platform.location.AndroidPositionProvider
 import com.gyro.app.platform.prefs.DataStorePreferencesRepository
+import com.gyro.app.platform.prefs.DataStoreTripRepository
 import com.gyro.app.platform.sensor.AndroidCompassSensorSource
 import com.gyro.app.platform.sensor.AndroidTiltSensorSource
 import com.gyro.app.platform.update.GithubUpdater
@@ -29,6 +33,8 @@ class AppContainer(context: Context) {
     val compassSensors: CompassSensorSource by lazy { AndroidCompassSensorSource(sensorManager, displayManager) }
     val tiltSensors: TiltSensorSource by lazy { AndroidTiltSensorSource(sensorManager, displayManager) }
     val locationSource: LocationSource by lazy { AndroidLocationSource(appContext) }
-    val declinationProvider: DeclinationProvider by lazy { AndroidDeclinationProvider(appContext) }
+    val positionProvider: PositionProvider by lazy { AndroidPositionProvider(appContext) }
+    val magneticModel: MagneticModel = AndroidMagneticModel
+    val tripRepository: TripRepository by lazy { DataStoreTripRepository(appContext) }
     val updater: GithubUpdater by lazy { GithubUpdater(appContext) }
 }

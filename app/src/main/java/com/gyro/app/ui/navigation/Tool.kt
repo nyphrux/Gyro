@@ -9,4 +9,12 @@ enum class Tool(@StringRes val label: Int, @StringRes val subtitle: Int, @Drawab
     COMPASS(R.string.tool_compass, R.string.tool_compass_subtitle, R.drawable.ic_compass),
     SPEED(R.string.tool_speed, R.string.tool_speed_subtitle, R.drawable.ic_speed),
     TILT(R.string.tool_tilt, R.string.tool_tilt_subtitle, R.drawable.ic_level),
+    ;
+
+    companion object {
+        /** Intent extra used by the launcher shortcuts (res/xml/shortcuts.xml) to open a tool. */
+        const val EXTRA_TOOL = "com.gyro.app.extra.TOOL"
+
+        fun fromName(name: String?): Tool? = entries.firstOrNull { it.name == name }
+    }
 }

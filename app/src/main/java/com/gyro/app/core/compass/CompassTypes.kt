@@ -94,9 +94,90 @@ sealed interface DeclinationResult {
     data class Available(val degrees: Float) : DeclinationResult
 }
 
-/** Supplies magnetic declination for the user's approximate position. */
-fun interface DeclinationProvider {
-    suspend fun declination(): DeclinationResult
+/** A position on Earth. Approximate is fine for everything the compass derives from it. */
+data class GeoPoint(val latitude: Double, val longitude: Double, val altitudeMeters: Float = 0f)
+
+/** The outcome of asking for the user's approximate position. */
+sealed interface PositionResult {
+    data object Loading : PositionResult
+    data object PermissionRequired : PositionResult
+    data object Unavailable : PositionResult
+    data class Available(val point: GeoPoint) : PositionResult
+}
+
+/** Supplies a one-off approximate position (no continuous updates). */
+fun interface PositionProvider {
+    suspend fun position(): PositionResult
+}
+
+/** Magnetic declination at a place and time (the platform's World Magnetic Model on Android). */
+fun interface MagneticModel {
+    /** Degrees, east positive (true = magnetic + declination). */
+    fun declinationDegrees(point: GeoPoint, epochMillis: Long): Float
+}
+
+/** Declination for the compass, derived from the position lookup. Only needed for true north. */
+fun declinationResult(
+    northReference: NorthReference,
+    position: PositionResult?,
+    epochMillis: Long,
+    model: MagneticModel,
+): DeclinationResult? {
+    if (northReference != NorthReference.TRUE) return null
+    return when (position) {
+        null, PositionResult.Loading -> DeclinationResult.Loading
+        PositionResult.PermissionRequired -> DeclinationResult.PermissionRequired
+        PositionResult.Unavailable -> DeclinationResult.LocationUnavailable
+        is PositionResult.Available -> DeclinationResult.Available(model.declinationDegrees(position.point, epochMillis))
+    }
+}
+
+/** What the compass shows about the sun. */
+sealed interface SunState {
+    /** The sun marker is switched off in settings. */
+    data object Hidden : SunState
+    data object Locating : SunState
+    data object PermissionRequired : SunState
+    data object Unavailable : SunState
+
+    /**
+     * @property bearingDegrees the sun's bearing in the compass's *displayed* reference (true or
+     *   magnetic), so it can be drawn on the same card as the heading.
+     */
+    data class Visible(val bearingDegrees: Float, val elevationDegrees: Float) : SunState {
+        val isUp: Boolean get() = elevationDegrees > -0.833f
+    }
+
+    companion object {
+        /**
+         * The solar azimuth is a true bearing. When the card is showing magnetic north it is
+         * converted using the declination at the same position, which is always known here.
+         */
+        fun from(
+            showSun: Boolean,
+            position: PositionResult?,
+            displaysTrueNorth: Boolean,
+            epochMillis: Long,
+            model: MagneticModel,
+        ): SunState {
+            if (!showSun) return Hidden
+            return when (position) {
+                null, PositionResult.Loading -> Locating
+                PositionResult.PermissionRequired -> PermissionRequired
+                PositionResult.Unavailable -> Unavailable
+                is PositionResult.Available -> {
+                    val point = position.point
+                    val sun = SolarPosition.compute(point.latitude, point.longitude, epochMillis)
+                    val bearing = if (displaysTrueNorth) {
+                        sun.azimuthDegrees
+                    } else {
+                        AngleMath.normalize(sun.azimuthDegrees - model.declinationDegrees(point, epochMillis))
+                    }
+                    Visible(bearing, sun.elevationDegrees)
+                }
+            }
+        }
+    }
 }
 
 enum class CalibrationStatus { GOOD, NEEDS_CALIBRATION, INTERFERENCE }

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Long-press the launcher icon to jump straight to a tool. targetPackage must be the
+    applicationId; the extra is read by MainActivity (Tool.EXTRA_TOOL).
+-->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="compass"
+        android:enabled="true"
+        android:icon="@mipmap/ic_shortcut_compass"
+        android:shortcutShortLabel="@string/tool_compass"
+        android:shortcutLongLabel="@string/shortcut_compass_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.gyro.app"
+            android:targetClass="com.gyro.app.MainActivity">
+            <extra android:name="com.gyro.app.extra.TOOL" android:value="COMPASS" />
+        </intent>
+    </shortcut>
+    <shortcut
+        android:shortcutId="speed"
+        android:enabled="true"
+        android:icon="@mipmap/ic_shortcut_speed"
+        android:shortcutShortLabel="@string/tool_speed"
+        android:shortcutLongLabel="@string/shortcut_speed_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.gyro.app"
+            android:targetClass="com.gyro.app.MainActivity">
+            <extra android:name="com.gyro.app.extra.TOOL" android:value="SPEED" />
+        </intent>
+    </shortcut>
+    <shortcut
+        android:shortcutId="tilt"
+        android:enabled="true"
+        android:icon="@mipmap/ic_shortcut_tilt"
+        android:shortcutShortLabel="@string/tool_tilt"
+        android:shortcutLongLabel="@string/shortcut_tilt_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.gyro.app"
+            android:targetClass="com.gyro.app.MainActivity">
+            <extra android:name="com.gyro.app.extra.TOOL" android:value="TILT" />
+        </intent>
+    </shortcut>
+</shortcuts>
