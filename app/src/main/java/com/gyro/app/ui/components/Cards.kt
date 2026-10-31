@@ -6,7 +6,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -15,6 +17,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -31,6 +35,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.gyro.app.ui.theme.GyroThemeColors
 import com.gyro.app.ui.theme.Readout
 
@@ -126,7 +131,13 @@ fun StatTile(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Spacer(Modifier.height(4.dp))
-                Text(value, style = Readout.medium, color = valueColor, maxLines = 1)
+                // Shrinks to fit rather than clipping long values ("123.4 km/h" beside a button).
+                BasicText(
+                    text = value,
+                    style = Readout.medium.copy(color = valueColor),
+                    maxLines = 1,
+                    autoSize = TextAutoSize.StepBased(minFontSize = 12.sp, maxFontSize = Readout.medium.fontSize, stepSize = 1.sp),
+                )
                 if (supporting != null) {
                     Text(
                         supporting,
@@ -140,6 +151,21 @@ fun StatTile(
             if (trailing != null) trailing()
         }
     }
+}
+
+/**
+ * A row of [StatTile]s that all take the height of the tallest, so a tile with a supporting
+ * line and one without still line up. Give each tile `Modifier.weight(1f).fillMaxHeight()`.
+ */
+@Composable
+fun StatRow(modifier: Modifier = Modifier, content: @Composable RowScope.() -> Unit) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(GroupGap),
+        modifier = modifier
+            .fillMaxWidth()
+            .height(IntrinsicSize.Min),
+        content = content,
+    )
 }
 
 /** Small explanatory footnote with an icon, used for honest caveats (GPS limits etc.). */

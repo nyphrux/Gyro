@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import com.gyro.app.R
 import com.gyro.app.core.prefs.UserPreferences
 import com.gyro.app.ui.common.LocalGyroHaptics
+import com.gyro.app.ui.common.LocalSoundSettings
 import com.gyro.app.ui.common.rememberGyroHaptics
 import com.gyro.app.ui.compass.CompassScreen
 import com.gyro.app.ui.components.GyroNavBar
@@ -83,7 +84,7 @@ fun GyroApp(preferences: UserPreferences, requestedTool: Tool? = null, onToolReq
     BackHandler(enabled = showSettings) { showSettings = false }
     BackHandler(enabled = !showSettings && tool != Tool.COMPASS) { tool = Tool.COMPASS }
 
-    CompositionLocalProvider(LocalGyroHaptics provides haptics) {
+    CompositionLocalProvider(LocalGyroHaptics provides haptics, LocalSoundSettings provides preferences.sound) {
         Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
             AnimatedContent(
                 targetState = showSettings,

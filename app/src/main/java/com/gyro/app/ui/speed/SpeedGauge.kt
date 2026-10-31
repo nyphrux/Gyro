@@ -16,6 +16,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -171,10 +172,14 @@ fun SpeedGauge(state: SpeedometerUiState, size: Dp, modifier: Modifier = Modifie
             }
         }
 
+        // The number scales with the gauge (and ignores the font-size setting), so three digits
+        // always sit inside the arc instead of overlapping the tick labels on small screens.
+        val heroSize = with(LocalDensity.current) { (size * 0.21f).toSp() }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text = readingText,
-                style = Readout.hero,
+                style = Readout.hero.copy(fontSize = heroSize, lineHeight = heroSize * 1.05f),
+                maxLines = 1,
                 color = if (reading == null) scheme.onSurfaceVariant else scheme.onSurface,
             )
             Text(

@@ -14,11 +14,9 @@ class SpeedTest {
         assertEquals(36f, SpeedUnit.KILOMETRES_PER_HOUR.fromMetersPerSecond(10f), 1e-4f)
         assertEquals(22.369363f, SpeedUnit.MILES_PER_HOUR.fromMetersPerSecond(10f), 1e-4f)
         assertEquals(10f, SpeedUnit.METRES_PER_SECOND.fromMetersPerSecond(10f), 1e-6f)
-        assertEquals(19.438445f, SpeedUnit.KNOTS.fromMetersPerSecond(10f), 1e-4f)
-        // Exact definitions: 100 km/h, 60 mph, 1 knot.
+        // Exact definitions: 100 km/h, 60 mph.
         assertEquals(27.777779f, SpeedUnit.KILOMETRES_PER_HOUR.toMetersPerSecond(100f), 1e-4f)
         assertEquals(26.8224f, SpeedUnit.MILES_PER_HOUR.toMetersPerSecond(60f), 1e-4f)
-        assertEquals(0.514444f, SpeedUnit.KNOTS.toMetersPerSecond(1f), 1e-5f)
     }
 
     @Test
@@ -34,7 +32,9 @@ class SpeedTest {
         assertEquals(SpeedUnit.MILES_PER_HOUR, SpeedUnit.defaultForRegion("us"))
         assertEquals(SpeedUnit.KILOMETRES_PER_HOUR, SpeedUnit.defaultForRegion("DE"))
         assertEquals(SpeedUnit.KILOMETRES_PER_HOUR, SpeedUnit.defaultForRegion(null))
-        assertEquals(SpeedUnit.KNOTS, SpeedUnit.fromName("KNOTS"))
+        assertEquals(SpeedUnit.METRES_PER_SECOND, SpeedUnit.fromName("METRES_PER_SECOND"))
+        // Knots were removed; a saved "KNOTS" falls back to the regional default.
+        assertNull(SpeedUnit.fromName("KNOTS"))
         assertNull(SpeedUnit.fromName("bogus"))
     }
 

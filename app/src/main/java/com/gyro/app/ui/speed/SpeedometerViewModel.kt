@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.gyro.app.GyroApplication
+import com.gyro.app.core.prefs.HudOrientation
 import com.gyro.app.core.prefs.PreferencesRepository
 import com.gyro.app.core.speed.LocationAccess
 import com.gyro.app.core.speed.SpeedUnit
@@ -67,6 +68,11 @@ class SpeedometerViewModel(
         .map { it.hudMirrored }
         .distinctUntilChanged()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT), true)
+
+    val hudOrientation: StateFlow<HudOrientation> = preferences.preferences
+        .map { it.hudOrientation }
+        .distinctUntilChanged()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT), HudOrientation.PORTRAIT)
 
     fun onLocationAccessChanged(newAccess: LocationAccess) {
         access.value = newAccess

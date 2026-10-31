@@ -10,17 +10,17 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -38,11 +38,12 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onLongClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -60,29 +61,26 @@ import com.gyro.app.core.math.CardinalDetent
 import com.gyro.app.core.math.CardinalDirection
 import com.gyro.app.core.prefs.NorthReference
 import com.gyro.app.ui.common.LocalGyroHaptics
-import com.gyro.app.ui.common.formatDegrees
 import com.gyro.app.ui.common.formatSignedDegrees
 import com.gyro.app.ui.common.rememberSampledState
-import com.gyro.app.ui.components.GroupGap
 import com.gyro.app.ui.components.GroupPosition
 import com.gyro.app.ui.components.IslandStatus
 import com.gyro.app.ui.components.IslandTone
 import com.gyro.app.ui.components.MessagePanel
 import com.gyro.app.ui.components.PanelAction
 import com.gyro.app.ui.components.PanelTone
+import com.gyro.app.ui.components.StatRow
 import com.gyro.app.ui.components.StatTile
 import com.gyro.app.ui.components.StatusIsland
 import com.gyro.app.ui.components.ToolLayout
 import com.gyro.app.ui.permission.rememberLocationPermissionState
 import com.gyro.app.ui.theme.GyroMotion
-import com.gyro.app.ui.theme.GyroThemeColors
 import com.gyro.app.ui.theme.LocalReducedMotion
 import com.gyro.app.ui.theme.Readout
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
-import kotlin.math.abs
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.roundToInt
@@ -132,11 +130,32 @@ fun CompassScreen(contentPadding: PaddingValues, viewModel: CompassViewModel = v
         },
         instrument = { size ->
             if (state.isAvailable) {
+                // The bearing and sun tiles are gone; long-press the dial to lock or clear a bearing.
+                // Locking puts the heading on course, which confirms by itself, so only clearing ticks.
+                val canLock = state.hasHeading
+                val lockLabel = stringResource(R.string.bearing_lock)
+                val clearLabel = stringResource(R.string.bearing_clear)
+                val toggleBearing: () -> Unit = {
+                    if (lockedBearing != null) {
+                        haptics.tick()
+                        viewModel.clearBearing()
+                    } else if (canLock) {
+                        viewModel.lockBearing()
+                    }
+                }
                 CompassDial(
                     heading = { heading.value },
                     size = size,
                     target = lockedBearing,
                     sun = sun as? SunState.Visible,
+                    modifier = Modifier
+                        .pointerInput(lockedBearing, canLock) { detectTapGestures(onLongPress = { toggleBearing() }) }
+                        .semantics {
+                            onLongClick(if (lockedBearing != null) clearLabel else lockLabel) {
+                                toggleBearing()
+                                true
+                            }
+                        },
                 )
             }
         },
@@ -150,18 +169,6 @@ fun CompassScreen(contentPadding: PaddingValues, viewModel: CompassViewModel = v
                 )
             } else {
                 CompassStats(state)
-                BearingAndSun(
-                    lockedBearing = lockedBearing,
-                    course = { course.value },
-                    sun = sun,
-                    canLock = state.hasHeading,
-                    // No haptic here: locking puts the heading on course, which confirms by itself.
-                    onLock = { viewModel.lockBearing() },
-                    onClear = {
-                        haptics.tick()
-                        viewModel.clearBearing()
-                    },
-                )
                 CalibrationGuidance(state.calibration)
                 LocationPrompt(
                     state = state,
@@ -236,12 +243,12 @@ private fun HeadingReadout(heading: () -> Float?, state: CompassUiState) {
 @Composable
 private fun CompassStats(state: CompassUiState) {
     val unknown = stringResource(R.string.value_unknown)
-    Row(horizontalArrangement = Arrangement.spacedBy(GroupGap), modifier = Modifier.fillMaxWidth()) {
+    StatRow {
         StatTile(
             label = stringResource(R.string.compass_stat_field),
             value = state.fieldStrengthMicroTesla?.let { stringResource(R.string.compass_stat_field_value, it) } ?: unknown,
             position = GroupPosition.FIRST,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f).fillMaxHeight(),
         )
         StatTile(
             label = stringResource(R.string.compass_stat_accuracy),
@@ -253,7 +260,7 @@ private fun CompassStats(state: CompassUiState) {
                 null -> unknown
             },
             position = GroupPosition.MIDDLE,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f).fillMaxHeight(),
         )
         StatTile(
             label = stringResource(R.string.compass_stat_declination),
@@ -261,7 +268,7 @@ private fun CompassStats(state: CompassUiState) {
                 ?.let { stringResource(R.string.degrees_value, formatSignedDegrees(it.degrees)) }
                 ?: stringResource(if (state.northReference == NorthReference.MAGNETIC) R.string.north_magnetic else R.string.value_unknown),
             position = GroupPosition.LAST,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f).fillMaxHeight(),
         )
     }
 }
@@ -379,95 +386,4 @@ private fun LocationPrompt(
             },
         )
     }
-}
-
-/**
- * Bearing lock and sun position. The course text follows the heading, so it is sampled at
- * 10 Hz like the other readouts rather than recomposing on every sensor sample.
- */
-@Composable
-private fun BearingAndSun(
-    lockedBearing: Float?,
-    course: () -> CourseGuidance?,
-    sun: SunState,
-    canLock: Boolean,
-    onLock: () -> Unit,
-    onClear: () -> Unit,
-) {
-    val showSun = sun != SunState.Hidden
-    Row(horizontalArrangement = Arrangement.spacedBy(GroupGap), modifier = Modifier.fillMaxWidth()) {
-        BearingTile(
-            lockedBearing = lockedBearing,
-            course = course,
-            canLock = canLock,
-            onLock = onLock,
-            onClear = onClear,
-            position = if (showSun) GroupPosition.FIRST else GroupPosition.SINGLE,
-            modifier = Modifier.weight(1f),
-        )
-        if (showSun) SunTile(sun, GroupPosition.LAST, Modifier.weight(1f))
-    }
-}
-
-@Composable
-private fun BearingTile(
-    lockedBearing: Float?,
-    course: () -> CourseGuidance?,
-    canLock: Boolean,
-    onLock: () -> Unit,
-    onClear: () -> Unit,
-    position: GroupPosition,
-    modifier: Modifier = Modifier,
-) {
-    val sampled by rememberSampledState { course() }
-    val guidance = sampled
-    val supporting = when {
-        lockedBearing == null -> stringResource(R.string.bearing_hint)
-        guidance == null -> stringResource(R.string.value_unknown)
-        guidance.onCourse -> stringResource(R.string.bearing_on_course)
-        guidance.offsetDegrees > 0f -> stringResource(R.string.bearing_turn_right, abs(guidance.offsetDegrees).let { Math.round(it) })
-        else -> stringResource(R.string.bearing_turn_left, abs(guidance.offsetDegrees).let { Math.round(it) })
-    }
-    StatTile(
-        label = stringResource(R.string.bearing_label),
-        value = lockedBearing?.let { "${Math.round(it) % 360}°" } ?: stringResource(R.string.bearing_off),
-        supporting = supporting,
-        valueColor = if (guidance?.onCourse == true) GyroThemeColors.current.success else MaterialTheme.colorScheme.onSurface,
-        position = position,
-        modifier = modifier,
-        trailing = {
-            if (lockedBearing == null) {
-                IconButton(onClick = onLock, enabled = canLock) {
-                    Icon(painterResource(R.drawable.ic_target), contentDescription = stringResource(R.string.bearing_lock), modifier = Modifier.size(20.dp))
-                }
-            } else {
-                IconButton(onClick = onClear) {
-                    Icon(painterResource(R.drawable.ic_close), contentDescription = stringResource(R.string.bearing_clear), modifier = Modifier.size(20.dp))
-                }
-            }
-        },
-    )
-}
-
-@Composable
-private fun SunTile(sun: SunState, position: GroupPosition, modifier: Modifier = Modifier) {
-    val unknown = stringResource(R.string.value_unknown)
-    val (value, supporting) = when (sun) {
-        is SunState.Visible -> "${Math.round(sun.bearingDegrees) % 360}°" to if (sun.isUp) {
-            stringResource(R.string.sun_above_horizon, formatDegrees(sun.elevationDegrees))
-        } else {
-            stringResource(R.string.sun_below_horizon, formatDegrees(sun.elevationDegrees))
-        }
-        SunState.Locating -> unknown to stringResource(R.string.sun_locating)
-        SunState.PermissionRequired -> unknown to stringResource(R.string.sun_needs_location)
-        SunState.Unavailable -> unknown to stringResource(R.string.sun_unavailable)
-        SunState.Hidden -> unknown to ""
-    }
-    StatTile(
-        label = stringResource(R.string.sun_label),
-        value = value,
-        supporting = supporting,
-        position = position,
-        modifier = modifier,
-    )
 }

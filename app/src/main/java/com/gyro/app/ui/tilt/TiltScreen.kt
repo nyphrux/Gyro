@@ -130,8 +130,7 @@ fun TiltScreen(contentPadding: PaddingValues, viewModel: TiltViewModel = viewMod
                     options = SlopeUnit.entries,
                     selected = slopeUnit,
                     onSelect = viewModel::setSlopeUnit,
-                    label = { slopeUnitShortLabel(it) },
-                    accessibilityLabel = { slopeUnitName(it) },
+                    label = { slopeUnitName(it) },
                 )
                 TiltReadouts(reading = { reading.value }, mode = mode ?: TiltMode.SURFACE, isLevel = isLevel, unit = slopeUnit)
                 HoldButton(
@@ -255,15 +254,6 @@ private fun TiltReadouts(reading: () -> TiltReading?, mode: TiltMode, isLevel: B
         )
     }
 }
-
-@Composable
-private fun slopeUnitShortLabel(unit: SlopeUnit): String = stringResource(
-    when (unit) {
-        SlopeUnit.DEGREES -> R.string.slope_unit_degrees_short
-        SlopeUnit.PERCENT -> R.string.slope_unit_percent_short
-        SlopeUnit.RATIO -> R.string.slope_unit_ratio_short
-    },
-)
 
 @Composable
 fun slopeUnitName(unit: SlopeUnit): String = stringResource(

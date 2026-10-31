@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,15 +19,18 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
@@ -35,7 +39,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -43,6 +50,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -50,12 +60,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gyro.app.BuildConfig
 import com.gyro.app.R
+import com.gyro.app.core.prefs.HudOrientation
 import com.gyro.app.core.prefs.NorthReference
-import com.gyro.app.core.prefs.ThemeMode
+import com.gyro.app.core.prefs.SoundSettings
 import com.gyro.app.core.prefs.UserPreferences
 import com.gyro.app.core.speed.SpeedUnit
 import com.gyro.app.core.tilt.SlopeUnit
 import com.gyro.app.ui.common.LocalGyroHaptics
+import com.gyro.app.ui.common.rememberGyroCues
 import com.gyro.app.ui.components.GroupGap
 import com.gyro.app.ui.components.GroupPosition
 import com.gyro.app.ui.components.GroupedSurface
@@ -66,6 +78,7 @@ import com.gyro.app.ui.components.TopBarIconButton
 import com.gyro.app.ui.speed.unitName
 import com.gyro.app.ui.tilt.slopeUnitName
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 @Composable
 fun SettingsScreen(onBack: () -> Unit, viewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory)) {
@@ -145,31 +158,57 @@ fun SettingsScreen(onBack: () -> Unit, viewModel: SettingsViewModel = viewModel(
 @Composable
 private fun SettingsContent(prefs: UserPreferences, viewModel: SettingsViewModel) {
     SectionHeader(stringResource(R.string.settings_appearance))
+    // Both pickers start collapsed to one row; the row shown is the one holding the choice.
+    var themesExpanded by rememberSaveable { mutableStateOf(false) }
+    var accentsExpanded by rememberSaveable { mutableStateOf(false) }
+    var editingCustom by rememberSaveable { mutableStateOf(false) }
+    val accentsPaused = prefs.themeMode.ignoresAccent
     Group {
-        SelectorItem(
-            GroupPosition.FIRST,
-            stringResource(R.string.settings_theme),
-            summary = when (prefs.themeMode) {
-                ThemeMode.SYSTEM -> stringResource(R.string.theme_system_summary)
-                ThemeMode.DARK -> stringResource(R.string.theme_dark_summary)
-                ThemeMode.LIGHT -> stringResource(R.string.theme_light_summary)
-                ThemeMode.BLACK -> stringResource(R.string.theme_black_summary)
-                ThemeMode.NIGHT -> stringResource(R.string.theme_night_summary)
-            },
+        CollapsibleSelectorItem(
+            position = GroupPosition.FIRST,
+            title = stringResource(R.string.settings_theme),
+            summary = stringResource(prefs.themeMode.summaryRes()),
+            expanded = themesExpanded,
+            onToggle = { themesExpanded = !themesExpanded },
         ) {
-            ThemePicker(selected = prefs.themeMode, accent = prefs.accent, onSelect = viewModel::setThemeMode)
+            ThemePicker(
+                selected = prefs.themeMode,
+                accent = prefs.accent,
+                customAccent = prefs.customAccent,
+                expanded = themesExpanded,
+                onSelect = viewModel::setThemeMode,
+            )
         }
-        SelectorItem(
-            GroupPosition.LAST,
-            stringResource(R.string.settings_accent),
-            summary = if (prefs.themeMode == ThemeMode.NIGHT) {
-                stringResource(R.string.settings_accent_night)
+        CollapsibleSelectorItem(
+            position = GroupPosition.LAST,
+            title = stringResource(R.string.settings_accent),
+            summary = if (accentsPaused) {
+                stringResource(R.string.settings_accent_paused, stringResource(prefs.themeMode.labelRes()))
             } else {
                 stringResource(prefs.accent.labelRes())
             },
+            expanded = accentsExpanded,
+            onToggle = { accentsExpanded = !accentsExpanded },
         ) {
-            AccentPicker(selected = prefs.accent, enabled = prefs.themeMode != ThemeMode.NIGHT, onSelect = viewModel::setAccent)
+            AccentPicker(
+                selected = prefs.accent,
+                customAccent = prefs.customAccent,
+                enabled = !accentsPaused,
+                expanded = accentsExpanded,
+                onSelect = viewModel::setAccent,
+                onEditCustom = { editingCustom = true },
+            )
         }
+    }
+    if (editingCustom) {
+        CustomAccentDialog(
+            initial = prefs.customAccent,
+            onPick = {
+                viewModel.setCustomAccent(it)
+                editingCustom = false
+            },
+            onDismiss = { editingCustom = false },
+        )
     }
 
     SectionHeader(stringResource(R.string.settings_instruments))
@@ -202,6 +241,18 @@ private fun SettingsContent(prefs: UserPreferences, viewModel: SettingsViewModel
             checked = prefs.showSun,
             onCheckedChange = viewModel::setShowSun,
         )
+        SelectorItem(
+            GroupPosition.MIDDLE,
+            stringResource(R.string.settings_hud_orientation),
+            summary = stringResource(R.string.settings_hud_orientation_summary),
+        ) {
+            PillSelector(
+                options = HudOrientation.entries,
+                selected = prefs.hudOrientation,
+                onSelect = viewModel::setHudOrientation,
+                label = { stringResource(if (it == HudOrientation.PORTRAIT) R.string.hud_portrait else R.string.hud_landscape) },
+            )
+        }
         SwitchItem(
             position = GroupPosition.LAST,
             title = stringResource(R.string.settings_keep_screen_on),
@@ -228,6 +279,8 @@ private fun SettingsContent(prefs: UserPreferences, viewModel: SettingsViewModel
             onCheckedChange = viewModel::setLevelTone,
         )
     }
+
+    SoundSection(prefs.sound, onChange = viewModel::setSound)
 
     SectionHeader(stringResource(R.string.settings_tilt))
     Group {
@@ -287,6 +340,95 @@ private fun SettingsContent(prefs: UserPreferences, viewModel: SettingsViewModel
     }
 }
 
+/**
+ * The beep used by "Beep when level" and the speed alert. Sliders change a local draft while
+ * dragging and save when let go, so DataStore is written once per adjustment, not per frame.
+ */
+@Composable
+private fun SoundSection(saved: SoundSettings, onChange: (SoundSettings) -> Unit) {
+    var draft by remember(saved) { mutableStateOf(saved) }
+    val cues = rememberGyroCues()
+    val haptics = LocalGyroHaptics.current
+    SectionHeader(stringResource(R.string.settings_sound))
+    Group {
+        SliderItem(
+            position = GroupPosition.FIRST,
+            title = stringResource(R.string.settings_sound_volume),
+            value = stringResource(R.string.settings_sound_volume_value, (draft.volume * 100).roundToInt()),
+            sliderValue = draft.volume,
+            range = SoundSettings.MIN_VOLUME..SoundSettings.MAX_VOLUME,
+            steps = 18, // 5 % steps
+            onValueChange = { draft = draft.copy(volume = (it * 20).roundToInt() / 20f) },
+            onValueChangeFinished = { onChange(draft) },
+        )
+        SliderItem(
+            position = GroupPosition.MIDDLE,
+            title = stringResource(R.string.settings_sound_length),
+            value = stringResource(R.string.settings_sound_length_value, draft.lengthMillis),
+            sliderValue = draft.lengthMillis.toFloat(),
+            range = SoundSettings.MIN_LENGTH_MS.toFloat()..SoundSettings.MAX_LENGTH_MS.toFloat(),
+            steps = 18, // 50 ms steps
+            onValueChange = { draft = draft.copy(lengthMillis = (it / 50f).roundToInt() * 50) },
+            onValueChangeFinished = { onChange(draft) },
+        )
+        SliderItem(
+            position = GroupPosition.MIDDLE,
+            title = stringResource(R.string.settings_sound_pitch),
+            value = stringResource(R.string.settings_sound_pitch_value, draft.pitchHz),
+            sliderValue = draft.pitchHz.toFloat(),
+            range = SoundSettings.MIN_PITCH_HZ.toFloat()..SoundSettings.MAX_PITCH_HZ.toFloat(),
+            onValueChange = { draft = draft.copy(pitchHz = (it / 10f).roundToInt() * 10) },
+            onValueChangeFinished = { onChange(draft) },
+        )
+        GroupedSurface(GroupPosition.LAST) {
+            ListItem(
+                colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                headlineContent = { Text(stringResource(R.string.settings_sound_preview), style = MaterialTheme.typography.titleSmall) },
+                supportingContent = { Text(stringResource(R.string.settings_sound_preview_summary)) },
+                trailingContent = {
+                    FilledTonalButton(onClick = {
+                        haptics.tick()
+                        cues.preview(draft)
+                    }) {
+                        Icon(painterResource(R.drawable.ic_sound), contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.settings_sound_play))
+                    }
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun SliderItem(
+    position: GroupPosition,
+    title: String,
+    value: String,
+    sliderValue: Float,
+    range: ClosedFloatingPointRange<Float>,
+    onValueChange: (Float) -> Unit,
+    onValueChangeFinished: () -> Unit,
+    steps: Int = 0,
+) {
+    GroupedSurface(position) {
+        Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 4.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(title, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
+                Text(value, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+            }
+            Slider(
+                value = sliderValue.coerceIn(range.start, range.endInclusive),
+                onValueChange = onValueChange,
+                onValueChangeFinished = onValueChangeFinished,
+                valueRange = range,
+                steps = steps,
+                modifier = Modifier.semantics { contentDescription = title },
+            )
+        }
+    }
+}
+
 /** A row that opens a web page: the whole row is the button, with an "opens outside" icon. */
 @Composable
 private fun LinkItem(position: GroupPosition, title: String, summary: String, linkDescription: String, onClick: () -> Unit) {
@@ -341,6 +483,52 @@ private fun SelectorItem(
             }
             Spacer(Modifier.height(12.dp))
             content()
+        }
+    }
+}
+
+/**
+ * A selector whose content can fold down to a single row. The header row (title, summary and
+ * chevron) toggles it, and is announced as expanded or collapsed.
+ */
+@Composable
+private fun CollapsibleSelectorItem(
+    position: GroupPosition,
+    title: String,
+    summary: String,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+    content: @Composable () -> Unit,
+) {
+    val haptics = LocalGyroHaptics.current
+    val expandLabel = stringResource(R.string.action_show_all)
+    val collapseLabel = stringResource(R.string.action_show_less)
+    GroupedSurface(position) {
+        Column(Modifier.padding(bottom = 16.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClickLabel = if (expanded) collapseLabel else expandLabel, role = Role.Button) {
+                        haptics.tick()
+                        onToggle()
+                    }
+                    .semantics { stateDescription = if (expanded) collapseLabel else expandLabel }
+                    .padding(start = 16.dp, end = 12.dp, top = 16.dp, bottom = 12.dp),
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(title, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface)
+                    Text(
+                        summary,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 2.dp),
+                    )
+                }
+                Spacer(Modifier.width(8.dp))
+                ExpandChevron(expanded)
+            }
+            Box(Modifier.padding(horizontal = 16.dp)) { content() }
         }
     }
 }

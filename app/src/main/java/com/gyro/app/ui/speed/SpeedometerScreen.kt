@@ -1,9 +1,8 @@
 package com.gyro.app.ui.speed
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
@@ -28,18 +27,15 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gyro.app.R
-import com.gyro.app.core.math.CardinalDirection
 import com.gyro.app.core.speed.SpeedStatus
 import com.gyro.app.core.speed.SpeedUnit
 import com.gyro.app.core.speed.SpeedometerUiState
 import com.gyro.app.ui.common.LocalGyroHaptics
-import com.gyro.app.ui.common.formatAccuracy
 import com.gyro.app.ui.common.formatDistance
 import com.gyro.app.ui.common.formatDuration
 import com.gyro.app.ui.common.formatSpeed
 import com.gyro.app.ui.common.rememberGyroCues
 import com.gyro.app.ui.components.Footnote
-import com.gyro.app.ui.components.GroupGap
 import com.gyro.app.ui.components.GroupPosition
 import com.gyro.app.ui.components.IslandStatus
 import com.gyro.app.ui.components.IslandTone
@@ -47,6 +43,7 @@ import com.gyro.app.ui.components.MessagePanel
 import com.gyro.app.ui.components.PanelAction
 import com.gyro.app.ui.components.PanelTone
 import com.gyro.app.ui.components.PillSelector
+import com.gyro.app.ui.components.StatRow
 import com.gyro.app.ui.components.StatTile
 import com.gyro.app.ui.components.StatusIsland
 import com.gyro.app.ui.components.ToolLayout
@@ -55,12 +52,12 @@ import com.gyro.app.ui.permission.rememberLocationPermissionState
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
-import kotlin.math.roundToInt
 
 @Composable
 fun SpeedometerScreen(contentPadding: PaddingValues, viewModel: SpeedometerViewModel = viewModel(factory = SpeedometerViewModel.Factory)) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val hudMirrored by viewModel.hudMirrored.collectAsStateWithLifecycle()
+    val hudOrientation by viewModel.hudOrientation.collectAsStateWithLifecycle()
     val permission = rememberLocationPermissionState(precise = true)
     LaunchedEffect(permission.access) { viewModel.onLocationAccessChanged(permission.access) }
 
@@ -119,6 +116,7 @@ fun SpeedometerScreen(contentPadding: PaddingValues, viewModel: SpeedometerViewM
         SpeedHud(
             state = state,
             mirrored = hudMirrored,
+            orientation = hudOrientation,
             onToggleMirror = { viewModel.setHudMirrored(!hudMirrored) },
             onClose = { showHud = false },
         )
@@ -131,7 +129,6 @@ fun unitName(unit: SpeedUnit): String = stringResource(
         SpeedUnit.KILOMETRES_PER_HOUR -> R.string.unit_kmh
         SpeedUnit.MILES_PER_HOUR -> R.string.unit_mph
         SpeedUnit.METRES_PER_SECOND -> R.string.unit_mps
-        SpeedUnit.KNOTS -> R.string.unit_kn
     },
 )
 
@@ -214,13 +211,14 @@ private fun SpeedStats(state: SpeedometerUiState, onResetTop: () -> Unit, onRese
     val haptics = LocalGyroHaptics.current
     val unknown = stringResource(R.string.value_unknown)
     val unit = state.unit
+    val tile = Modifier.fillMaxHeight()
 
-    Row(horizontalArrangement = Arrangement.spacedBy(GroupGap), modifier = Modifier.fillMaxWidth()) {
+    StatRow {
         StatTile(
             label = stringResource(R.string.speed_stat_top),
             value = if (state.topSpeedMetersPerSecond > 0f) "${formatSpeed(state.displayTopSpeed, unit)} ${unit.symbol}" else unknown,
             position = GroupPosition.FIRST,
-            modifier = Modifier.weight(1f),
+            modifier = tile.weight(1f),
             trailing = {
                 ResetButton(
                     description = stringResource(R.string.speed_reset_top_description),
@@ -233,19 +231,20 @@ private fun SpeedStats(state: SpeedometerUiState, onResetTop: () -> Unit, onRese
             },
         )
         StatTile(
-            label = stringResource(R.string.speed_stat_accuracy),
-            value = state.displayAccuracy?.let { stringResource(R.string.speed_accuracy_value, formatAccuracy(it), unit.symbol) } ?: unknown,
+            label = stringResource(R.string.speed_stat_average),
+            value = state.displayAverageSpeed?.let { "${formatSpeed(it, unit)} ${unit.symbol}" } ?: unknown,
+            supporting = stringResource(R.string.speed_average_supporting),
             position = GroupPosition.LAST,
-            modifier = Modifier.weight(1f),
+            modifier = tile.weight(1f),
         )
     }
 
-    Row(horizontalArrangement = Arrangement.spacedBy(GroupGap), modifier = Modifier.fillMaxWidth()) {
+    StatRow {
         StatTile(
             label = stringResource(R.string.speed_stat_trip),
             value = "${formatDistance(state.displayDistance)} ${unit.distanceSymbol}",
             position = GroupPosition.FIRST,
-            modifier = Modifier.weight(1f),
+            modifier = tile.weight(1f),
             trailing = {
                 ResetButton(
                     description = stringResource(R.string.speed_reset_trip_description),
@@ -258,28 +257,10 @@ private fun SpeedStats(state: SpeedometerUiState, onResetTop: () -> Unit, onRese
             },
         )
         StatTile(
-            label = stringResource(R.string.speed_stat_average),
-            value = state.displayAverageSpeed?.let { "${formatSpeed(it, unit)} ${unit.symbol}" } ?: unknown,
-            supporting = stringResource(R.string.speed_average_supporting),
-            position = GroupPosition.LAST,
-            modifier = Modifier.weight(1f),
-        )
-    }
-
-    Row(horizontalArrangement = Arrangement.spacedBy(GroupGap), modifier = Modifier.fillMaxWidth()) {
-        StatTile(
             label = stringResource(R.string.speed_stat_moving_time),
             value = formatDuration(state.trip.movingSeconds),
-            position = GroupPosition.FIRST,
-            modifier = Modifier.weight(1f),
-        )
-        val course = state.courseDegrees
-        StatTile(
-            label = stringResource(R.string.speed_stat_course),
-            value = course?.let { "${it.roundToInt() % 360}° ${CardinalDirection.fromHeading(it).name}" } ?: unknown,
-            supporting = stringResource(if (course != null) R.string.speed_course_supporting else R.string.speed_course_waiting),
             position = GroupPosition.LAST,
-            modifier = Modifier.weight(1f),
+            modifier = tile.weight(1f),
         )
     }
 }

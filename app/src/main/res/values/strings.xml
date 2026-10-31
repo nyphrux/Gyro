@@ -17,6 +17,8 @@
     <string name="action_allow_location">Allow location</string>
     <string name="action_open_settings">Open settings</string>
     <string name="action_reset">Reset</string>
+    <string name="action_show_all">Show all</string>
+    <string name="action_show_less">Show less</string>
     <string name="degrees_value">%1$s°</string>
 
     <!-- Compass -->
@@ -49,21 +51,10 @@
     <string name="action_use_magnetic">Use magnetic north</string>
     <string name="action_hide_sun">Hide the sun</string>
 
-    <string name="bearing_label">Bearing</string>
-    <string name="bearing_off">Off</string>
-    <string name="bearing_hint">Point and lock to follow it</string>
-    <string name="bearing_on_course">On course</string>
-    <string name="bearing_turn_right">Turn right %1$d°</string>
-    <string name="bearing_turn_left">Turn left %1$d°</string>
+    <!-- Bearing lock has no tile: long-press the dial. These label that action for TalkBack. -->
     <string name="bearing_lock">Lock current bearing</string>
     <string name="bearing_clear">Clear bearing</string>
 
-    <string name="sun_label">Sun</string>
-    <string name="sun_above_horizon">%1$s° above horizon</string>
-    <string name="sun_below_horizon">%1$s° below horizon</string>
-    <string name="sun_locating">Locating…</string>
-    <string name="sun_needs_location">Needs location</string>
-    <string name="sun_unavailable">Location unavailable</string>
     <string name="sun_permission_title">Location needed for the sun</string>
     <string name="sun_permission_body">The sun marker uses your approximate location once to work out where the sun is. It stays on this device.</string>
     <string name="sun_blocked_body">Location permission is turned off for Gyro. Allow approximate location in system settings to show the sun.</string>
@@ -99,17 +90,12 @@
     <string name="speed_description">Speed %1$s %2$s</string>
     <string name="speed_description_none">No speed reading</string>
     <string name="speed_stat_top">Top speed</string>
-    <string name="speed_stat_accuracy">Accuracy</string>
-    <string name="speed_accuracy_value">±%1$s %2$s</string>
     <string name="speed_reset_top_description">Reset top speed</string>
     <string name="speed_stat_trip">Trip</string>
     <string name="speed_reset_trip_description">Reset trip</string>
     <string name="speed_stat_average">Average</string>
     <string name="speed_average_supporting">While moving</string>
     <string name="speed_stat_moving_time">Moving time</string>
-    <string name="speed_stat_course">Direction</string>
-    <string name="speed_course_supporting">From GPS</string>
-    <string name="speed_course_waiting">Shown when moving</string>
     <string name="speed_stat_alert">Speed alert</string>
     <string name="speed_alert_off">Off</string>
     <string name="speed_alert_hint">Beep and buzz above a speed you choose</string>
@@ -125,10 +111,11 @@
     <string name="hud_mirror">Mirror</string>
     <string name="hud_unmirror">Unmirror</string>
     <string name="hud_close">Close</string>
+    <string name="hud_portrait">Portrait</string>
+    <string name="hud_landscape">Landscape</string>
     <string name="unit_kmh">Kilometres per hour</string>
     <string name="unit_mph">Miles per hour</string>
     <string name="unit_mps">Metres per second</string>
-    <string name="unit_kn">Knots</string>
     <string name="speed_gps_note">Speed comes from GPS. It works best outdoors with a clear view of the sky, and may be inaccurate or unavailable indoors, in tunnels or between tall buildings.</string>
     <string name="permission_title">Allow location for speed</string>
     <string name="permission_body">Gyro reads your speed from GPS only while this screen is open. Your location is never stored or shared.</string>
@@ -171,11 +158,8 @@
     <string name="tilt_hold">Hold reading</string>
     <string name="tilt_release">Release</string>
     <string name="slope_unit_degrees">Degrees</string>
-    <string name="slope_unit_percent">Percent</string>
+    <string name="slope_unit_percent">Percentage</string>
     <string name="slope_unit_ratio">Ratio</string>
-    <string name="slope_unit_degrees_short">°</string>
-    <string name="slope_unit_percent_short" formatted="false">%</string>
-    <string name="slope_unit_ratio_short">1:n</string>
     <string name="slope_percent_value">%1$s%%</string>
     <string name="slope_ratio_value">1:%1$s</string>
     <string name="slope_ratio_level">1:∞</string>
@@ -192,13 +176,23 @@
     <string name="theme_dark">Dark</string>
     <string name="theme_black">Black</string>
     <string name="theme_night">Night</string>
+    <string name="theme_dim">Dim</string>
+    <string name="theme_midnight">Midnight</string>
+    <string name="theme_paper">Paper</string>
+    <string name="theme_contrast">Contrast</string>
+    <string name="theme_terminal">Terminal</string>
     <string name="theme_system_summary">Follows your device\'s system theme, light or dark.</string>
     <string name="theme_dark_summary">Clean on your eyes at night, a soft black scheme.</string>
     <string name="theme_light_summary">Clean on your eyes at day, a bright white scheme.</string>
     <string name="theme_black_summary">Pure black backgrounds. Easiest on OLED screens and battery.</string>
     <string name="theme_night_summary">Red on black, so the screen will not spoil your night vision.</string>
+    <string name="theme_dim_summary">A softer dark grey, gentler than black for long reading.</string>
+    <string name="theme_midnight_summary">Deep blue-black surfaces under your accent colour.</string>
+    <string name="theme_paper_summary">Warm cream pages and brown-black text, like a printed chart.</string>
+    <string name="theme_contrast_summary">White page, black text and bold outlines, for bright sunlight.</string>
+    <string name="theme_terminal_summary">Green phosphor on black, like an old monochrome screen.</string>
     <string name="settings_accent">Accent colour</string>
-    <string name="settings_accent_night">Night uses red only, so accents are paused.</string>
+    <string name="settings_accent_paused">%1$s uses its own colours, so accents are paused.</string>
     <string name="accent_teal">Teal</string>
     <string name="accent_blue">Blue</string>
     <string name="accent_indigo">Indigo</string>
@@ -210,7 +204,25 @@
     <string name="accent_green">Green</string>
     <string name="accent_mocha">Mocha</string>
     <string name="accent_graphite">Graphite</string>
+    <string name="accent_red">Red</string>
+    <string name="accent_orange">Orange</string>
+    <string name="accent_gold">Gold</string>
+    <string name="accent_olive">Olive</string>
+    <string name="accent_mint">Mint</string>
+    <string name="accent_cyan">Cyan</string>
+    <string name="accent_sky">Sky</string>
+    <string name="accent_navy">Navy</string>
+    <string name="accent_lavender">Lavender</string>
+    <string name="accent_pink">Pink</string>
+    <string name="accent_slate">Slate</string>
     <string name="accent_wallpaper">Wallpaper</string>
+    <string name="accent_custom">Custom</string>
+    <string name="custom_accent_title">Custom accent</string>
+    <string name="custom_accent_hex">Hex</string>
+    <string name="custom_accent_hue">Hue</string>
+    <string name="custom_accent_saturation">Saturation</string>
+    <string name="custom_accent_brightness">Brightness</string>
+    <string name="custom_accent_use">Use colour</string>
     <string name="settings_instruments">Instruments</string>
     <string name="settings_speed_unit">Speed unit</string>
     <string name="settings_north">North reference</string>
@@ -219,6 +231,8 @@
     <string name="north_true">True</string>
     <string name="settings_show_sun">Show the sun</string>
     <string name="settings_show_sun_summary">Marks the sun\'s direction on the compass, using your approximate location</string>
+    <string name="settings_hud_orientation">Head-up display</string>
+    <string name="settings_hud_orientation_summary">Landscape turns the display sideways, for a phone lying across the dashboard</string>
     <string name="settings_keep_screen_on">Keep screen on</string>
     <string name="settings_keep_screen_on_summary">Stop the display sleeping while Gyro is open</string>
     <string name="settings_feedback">Feedback</string>
@@ -226,6 +240,16 @@
     <string name="settings_haptics_summary">Ticks at N, E, S and W, on a locked bearing, and when the level is found</string>
     <string name="settings_level_tone">Beep when level</string>
     <string name="settings_level_tone_summary">A short tone when the tilt meter finds level, for when you can\'t see the screen</string>
+    <string name="settings_sound">Sound</string>
+    <string name="settings_sound_volume">Volume</string>
+    <string name="settings_sound_volume_value">%1$d%%</string>
+    <string name="settings_sound_length">Sound length</string>
+    <string name="settings_sound_length_value">%1$d ms</string>
+    <string name="settings_sound_pitch">Sound pitch</string>
+    <string name="settings_sound_pitch_value">%1$d Hz</string>
+    <string name="settings_sound_preview">Preview sound</string>
+    <string name="settings_sound_preview_summary">Used by the level beep and the speed alert. Follows your notification volume.</string>
+    <string name="settings_sound_play">Play</string>
     <string name="settings_tilt">Tilt meter</string>
     <string name="settings_slope_unit">Slope unit</string>
     <string name="settings_tilt_zero">Custom zero</string>

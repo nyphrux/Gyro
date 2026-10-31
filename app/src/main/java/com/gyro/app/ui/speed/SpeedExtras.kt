@@ -33,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
@@ -41,6 +42,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.min
 import androidx.compose.ui.window.Dialog
@@ -50,9 +52,11 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.gyro.app.R
+import com.gyro.app.core.prefs.HudOrientation
 import com.gyro.app.core.speed.SpeedUnit
 import com.gyro.app.core.speed.SpeedometerUiState
 import com.gyro.app.ui.common.formatSpeed
+import com.gyro.app.ui.theme.GyroThemeColors
 import com.gyro.app.ui.theme.Readout
 
 /** Largest threshold the alert accepts, in display units (well above any road speed in any unit). */
@@ -114,22 +118,28 @@ fun SpeedAlertDialog(currentMetersPerSecond: Float?, unit: SpeedUnit, onSet: (Fl
  * be reflected in a windscreen at night. Mirrored by default, because a reflection reverses
  * left and right when the phone lies flat on the dashboard with its top edge towards the driver.
  *
+ * The background is always black, so the digits use the bright island colours (made to read on
+ * near-black) rather than the theme's primary, which is a dark tone in light themes.
+ *
+ * [orientation] LANDSCAPE turns the whole display a quarter turn clockwise, for a phone lying
+ * sideways. The activity stays portrait, so there is no rotation or recreation while driving.
+ *
  * The speed value is the same honest reading as the gauge: a dash when there is no fix.
  */
 @Composable
-fun SpeedHud(state: SpeedometerUiState, mirrored: Boolean, onToggleMirror: () -> Unit, onClose: () -> Unit) {
+fun SpeedHud(state: SpeedometerUiState, mirrored: Boolean, orientation: HudOrientation, onToggleMirror: () -> Unit, onClose: () -> Unit) {
     Dialog(
         onDismissRequest = onClose,
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
     ) {
         HudWindowEffects()
-        val scheme = MaterialTheme.colorScheme
+        val hud = GyroThemeColors.current
         val reading = state.displaySpeed
         val text = reading?.let { formatSpeed(it, state.unit) } ?: stringResource(R.string.value_unknown)
         val color = when {
-            reading == null -> scheme.onSurfaceVariant
-            state.isOverAlert -> scheme.error
-            else -> scheme.primary
+            reading == null -> HudIdle
+            state.isOverAlert -> hud.islandError
+            else -> hud.islandActive
         }
         val description = if (reading != null) {
             stringResource(R.string.speed_description, text, unitName(state.unit))
@@ -139,47 +149,78 @@ fun SpeedHud(state: SpeedometerUiState, mirrored: Boolean, onToggleMirror: () ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black),
+                .background(Color.Black)
+                .safeDrawingPadding(),
         ) {
-            BoxWithConstraints(
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .safeDrawingPadding()
-                    .padding(bottom = 72.dp)
-                    .semantics { contentDescription = description },
-                contentAlignment = Alignment.Center,
+                    .then(if (orientation == HudOrientation.LANDSCAPE) Modifier.quarterTurn() else Modifier),
             ) {
-                // Three digits fill most of the width in portrait.
-                val digitHeight = min(maxWidth / 2.2f, maxHeight / 1.6f)
-                val fontSize = with(LocalDensity.current) { digitHeight.toSp() }
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.graphicsLayer { scaleX = if (mirrored) -1f else 1f },
+                BoxWithConstraints(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(bottom = 72.dp)
+                        .semantics { contentDescription = description },
+                    contentAlignment = Alignment.Center,
                 ) {
-                    Text(text = text, style = Readout.hero.copy(fontSize = fontSize, lineHeight = fontSize), color = color, maxLines = 1)
-                    Text(text = state.unit.symbol, style = MaterialTheme.typography.headlineLarge, color = color.copy(alpha = 0.8f))
+                    // Three digits fill most of the width, leaving room for the unit underneath.
+                    val digitHeight = min(maxWidth / 2.2f, maxHeight / 1.6f)
+                    val fontSize = with(LocalDensity.current) { digitHeight.toSp() }
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.graphicsLayer { scaleX = if (mirrored) -1f else 1f },
+                    ) {
+                        Text(text = text, style = Readout.hero.copy(fontSize = fontSize, lineHeight = fontSize), color = color, maxLines = 1)
+                        Text(text = state.unit.symbol, style = MaterialTheme.typography.headlineLarge, color = color.copy(alpha = 0.8f))
+                    }
                 }
-            }
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .safeDrawingPadding()
-                    .padding(16.dp),
-            ) {
-                val dim = Color.White.copy(alpha = 0.55f)
-                TextButton(onClick = onToggleMirror) {
-                    Text(stringResource(if (mirrored) R.string.hud_unmirror else R.string.hud_mirror), color = dim)
-                }
-                Spacer(Modifier.width(8.dp))
-                TextButton(onClick = onClose) {
-                    Icon(painterResource(R.drawable.ic_close), contentDescription = null, tint = dim, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text(stringResource(R.string.hud_close), color = dim)
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(16.dp),
+                ) {
+                    TextButton(onClick = onToggleMirror) {
+                        Text(stringResource(if (mirrored) R.string.hud_unmirror else R.string.hud_mirror), color = HudControl)
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    TextButton(onClick = onClose) {
+                        Icon(painterResource(R.drawable.ic_close), contentDescription = null, tint = HudControl, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text(stringResource(R.string.hud_close), color = HudControl)
+                    }
                 }
             }
         }
+    }
+}
+
+/** No reading yet: a quiet grey that still reads on black. */
+private val HudIdle = Color(0xFF9AA4A6)
+
+/** The mirror and close buttons: dim, so they do not glare in the windscreen. */
+private val HudControl = Color.White.copy(alpha = 0.6f)
+
+/**
+ * Lays the content out in the swapped space (height becomes width) and turns it a quarter turn
+ * clockwise, so it reads upright on a phone rotated anticlockwise into landscape.
+ */
+private fun Modifier.quarterTurn(): Modifier = layout { measurable, constraints ->
+    val placeable = measurable.measure(
+        Constraints(
+            minWidth = constraints.minHeight,
+            maxWidth = constraints.maxHeight,
+            minHeight = constraints.minWidth,
+            maxHeight = constraints.maxWidth,
+        ),
+    )
+    layout(placeable.height, placeable.width) {
+        placeable.placeWithLayer(
+            x = (placeable.height - placeable.width) / 2,
+            y = (placeable.width - placeable.height) / 2,
+        ) { rotationZ = 90f }
     }
 }
 

@@ -86,7 +86,7 @@ internal val DarkColors = darkColorScheme(
     surfaceContainerHighest = Color(0xFF303637),
 )
 
-/** Semantic colours Material 3 does not provide. Fixed under every accent (only Night recolours them). */
+/** Semantic colours Material 3 does not provide. Fixed under every accent (only Night and Terminal recolour them). */
 @Immutable
 data class GyroSemanticColors(
     val success: Color,
@@ -154,6 +154,25 @@ internal val NightSemanticColors = GyroSemanticColors(
     islandWarning = Color(0xFFFF7F50),
     islandError = Color(0xFFFF3B30),
     islandNeutral = Color(0xFF9A3B33),
+)
+
+/** Terminal: greens on black, with amber for warnings and errors like an old amber/green CRT. */
+internal val TerminalSemanticColors = GyroSemanticColors(
+    success = Color(0xFFA8FFBE),
+    onSuccess = Color(0xFF002A0D),
+    successContainer = Color(0xFF0A3D1A),
+    onSuccessContainer = Color(0xFFC9FFD6),
+    warning = Color(0xFFFFC14D),
+    warningContainer = Color(0xFF3D2A00),
+    onWarningContainer = Color(0xFFFFDFA0),
+    island = Color(0xFF031A0A),
+    onIsland = Color(0xFF7CFF9A),
+    onIslandMuted = Color(0xFF2F8A47),
+    islandActive = Color(0xFF33FF66),
+    islandSuccess = Color(0xFFA8FFBE),
+    islandWarning = Color(0xFFFFC14D),
+    islandError = Color(0xFFFFB000),
+    islandNeutral = Color(0xFF2F8A47),
 )
 
 val LocalGyroColors = staticCompositionLocalOf { LightSemanticColors }

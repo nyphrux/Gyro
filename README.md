@@ -8,28 +8,30 @@ access is the update check in Settings, which asks GitHub for the latest release
 
 **Compass**
 - Magnetic or true north (true north looks up the local magnetic declination once).
-- Bearing lock: point at something, lock it, and Gyro tells you which way and how far to turn to
-  stay on that bearing, with a haptic tick when you're back on course.
-- Optional sun marker showing where the sun is (or will rise or set), worked out on the device from
-  your approximate location and the time.
+- Bearing lock: point at something and long-press the dial to lock it; a heading bug marks it on
+  the dial, with a haptic tick when you're back on course. Long-press again to clear it.
+- Optional sun marker on the dial showing where the sun is, worked out on the device from your
+  approximate location and the time.
 - Calibration and magnetic interference warnings.
 
 **Speedometer**
-- GPS (Doppler) speed in km/h, mph, m/s or knots, on an auto-ranging gauge.
+- GPS (Doppler) speed in km/h, mph or m/s, on an auto-ranging gauge.
 - Trip distance, average moving speed and moving time, kept across app restarts.
 - Top speed (low-accuracy fixes never set a record).
-- Direction of travel from GPS, which is useful in a car, where the magnetometer is unreliable.
 - Speed alert: beeps and vibrates when you go over a speed you choose.
-- Head-up display: huge mirrored digits at full brightness, for reflecting in a windscreen.
+- Head-up display: huge mirrored digits at full brightness, for reflecting in a windscreen, in
+  portrait or landscape (set in Settings).
 
 **Tilt meter**
 - Two-axis bubble level when the phone is lying flat; spirit level when it's standing on an edge.
-- Readings in degrees, percent gradient or rise:run ratio (1:12).
+- Readings in degrees, percentage gradient or rise:run ratio (1:12).
 - Hold a reading to read it after taking the phone out of an awkward spot.
 - Custom zero, plus an optional beep when level for when you can't see the screen.
 
 **Everywhere**
-- Light, dark, pure black and red night-vision themes with a choice of accent colours.
+- Ten themes (System, Light, Dark, Black, red Night, Dim, Midnight, Paper, high Contrast and green
+  Terminal) and 22 accent colours, plus your wallpaper's colours or any custom colour.
+- Adjustable beep: volume, length and pitch, with a preview, for the level beep and speed alert.
 - Long-press the launcher icon to jump straight to Compass, Speed or Tilt.
 
 ## Install

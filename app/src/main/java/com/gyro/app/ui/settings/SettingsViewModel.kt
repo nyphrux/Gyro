@@ -8,8 +8,10 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.gyro.app.GyroApplication
 import com.gyro.app.core.prefs.AccentColor
+import com.gyro.app.core.prefs.HudOrientation
 import com.gyro.app.core.prefs.NorthReference
 import com.gyro.app.core.prefs.PreferencesRepository
+import com.gyro.app.core.prefs.SoundSettings
 import com.gyro.app.core.prefs.ThemeMode
 import com.gyro.app.core.prefs.UserPreferences
 import com.gyro.app.core.speed.SpeedUnit
@@ -77,6 +79,9 @@ class SettingsViewModel(
     fun setShowSun(enabled: Boolean) = update { repository.setShowSun(enabled) }
     fun setLevelTone(enabled: Boolean) = update { repository.setLevelTone(enabled) }
     fun setSlopeUnit(unit: SlopeUnit) = update { repository.setSlopeUnit(unit) }
+    fun setCustomAccent(argb: Int) = update { repository.setCustomAccent(argb) }
+    fun setHudOrientation(orientation: HudOrientation) = update { repository.setHudOrientation(orientation) }
+    fun setSound(sound: SoundSettings) = update { repository.setSound(sound) }
 
     private fun update(block: suspend () -> Unit) {
         viewModelScope.launch { block() }

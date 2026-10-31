@@ -9,12 +9,16 @@ import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.gyro.app.core.math.Vec3
 import com.gyro.app.core.prefs.AccentColor
+import com.gyro.app.core.prefs.DEFAULT_CUSTOM_ACCENT
+import com.gyro.app.core.prefs.HudOrientation
 import com.gyro.app.core.prefs.NorthReference
 import com.gyro.app.core.prefs.PreferencesRepository
+import com.gyro.app.core.prefs.SoundSettings
 import com.gyro.app.core.prefs.ThemeMode
 import com.gyro.app.core.prefs.UserPreferences
 import com.gyro.app.core.speed.SpeedUnit
@@ -105,6 +109,7 @@ class DataStorePreferencesRepository(
             // Older versions stored only a "wallpaper colours" switch; carry it over as the Wallpaper accent.
             accent = settings[Keys.ACCENT]?.let { name -> AccentColor.entries.firstOrNull { it.name == name } }
                 ?: if (settings[Keys.DYNAMIC_COLOR] == true) AccentColor.WALLPAPER else AccentColor.TEAL,
+            customAccent = settings[Keys.CUSTOM_ACCENT]?.let { it or OPAQUE } ?: DEFAULT_CUSTOM_ACCENT,
             speedUnit = SpeedUnit.fromName(settings[Keys.SPEED_UNIT]) ?: defaultSpeedUnit,
             northReference = settings[Keys.NORTH]?.let { name -> NorthReference.entries.firstOrNull { it.name == name } }
                 ?: NorthReference.MAGNETIC,
@@ -115,6 +120,13 @@ class DataStorePreferencesRepository(
             levelTone = settings[Keys.LEVEL_TONE] ?: false,
             slopeUnit = SlopeUnit.fromName(settings[Keys.SLOPE_UNIT]) ?: SlopeUnit.DEGREES,
             hudMirrored = settings[Keys.HUD_MIRRORED] ?: true,
+            hudOrientation = settings[Keys.HUD_ORIENTATION]?.let { name -> HudOrientation.entries.firstOrNull { it.name == name } }
+                ?: HudOrientation.PORTRAIT,
+            sound = SoundSettings(
+                volume = settings[Keys.SOUND_VOLUME] ?: SoundSettings.DEFAULT_VOLUME,
+                lengthMillis = settings[Keys.SOUND_LENGTH] ?: SoundSettings.DEFAULT_LENGTH_MS,
+                pitchHz = settings[Keys.SOUND_PITCH] ?: SoundSettings.DEFAULT_PITCH_HZ,
+            ).coerced(),
             speedAlertMetersPerSecond = settings[Keys.SPEED_ALERT]?.takeIf { it > 0f },
         )
     }
@@ -126,6 +138,13 @@ class DataStorePreferencesRepository(
             prefs.remove(Keys.DYNAMIC_COLOR)
         }
     }
+    override suspend fun setCustomAccent(argb: Int) {
+        dataStore.edit { prefs ->
+            prefs[Keys.CUSTOM_ACCENT] = argb or OPAQUE
+            prefs[Keys.ACCENT] = AccentColor.CUSTOM.name
+            prefs.remove(Keys.DYNAMIC_COLOR)
+        }
+    }
     override suspend fun setSpeedUnit(unit: SpeedUnit) = set(Keys.SPEED_UNIT, unit.name)
     override suspend fun setNorthReference(reference: NorthReference) = set(Keys.NORTH, reference.name)
     override suspend fun setHapticsEnabled(enabled: Boolean) = set(Keys.HAPTICS, enabled)
@@ -134,6 +153,16 @@ class DataStorePreferencesRepository(
     override suspend fun setLevelTone(enabled: Boolean) = set(Keys.LEVEL_TONE, enabled)
     override suspend fun setSlopeUnit(unit: SlopeUnit) = set(Keys.SLOPE_UNIT, unit.name)
     override suspend fun setHudMirrored(mirrored: Boolean) = set(Keys.HUD_MIRRORED, mirrored)
+    override suspend fun setHudOrientation(orientation: HudOrientation) = set(Keys.HUD_ORIENTATION, orientation.name)
+
+    override suspend fun setSound(sound: SoundSettings) {
+        val value = sound.coerced()
+        dataStore.edit { prefs ->
+            prefs[Keys.SOUND_VOLUME] = value.volume
+            prefs[Keys.SOUND_LENGTH] = value.lengthMillis
+            prefs[Keys.SOUND_PITCH] = value.pitchHz
+        }
+    }
 
     override suspend fun setSpeedAlert(metersPerSecond: Float?) {
         dataStore.edit { prefs ->
@@ -171,6 +200,16 @@ class DataStorePreferencesRepository(
         val SLOPE_UNIT = stringPreferencesKey("slope_unit")
         val HUD_MIRRORED = booleanPreferencesKey("hud_mirrored")
         val SPEED_ALERT = floatPreferencesKey("speed_alert_mps")
+        val CUSTOM_ACCENT = intPreferencesKey("custom_accent_argb")
+        val HUD_ORIENTATION = stringPreferencesKey("hud_orientation")
+        val SOUND_VOLUME = floatPreferencesKey("sound_volume")
+        val SOUND_LENGTH = intPreferencesKey("sound_length_ms")
+        val SOUND_PITCH = intPreferencesKey("sound_pitch_hz")
+    }
+
+    private companion object {
+        /** Forces full alpha, so a stored colour can never make the accent see-through. */
+        const val OPAQUE: Int = 0xFF000000.toInt()
     }
 }
 

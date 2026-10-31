@@ -80,7 +80,6 @@ class TripTest {
     fun distanceUnits() {
         assertEquals(1.0, SpeedUnit.KILOMETRES_PER_HOUR.distanceFromMeters(1000.0), 1e-12)
         assertEquals(1.0, SpeedUnit.MILES_PER_HOUR.distanceFromMeters(1609.344), 1e-12)
-        assertEquals(1.0, SpeedUnit.KNOTS.distanceFromMeters(1852.0), 1e-12)
         assertEquals("km", SpeedUnit.METRES_PER_SECOND.distanceSymbol)
     }
 

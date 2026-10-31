@@ -5,7 +5,8 @@ package com.gyro.app.core.speed
  * `android.location.Location.getSpeed()` reports it.
  *
  * Each speed unit also names the distance unit that goes with it for trip distance
- * (km with km/h and m/s, miles with mph, nautical miles with knots).
+ * (km with km/h and m/s, miles with mph). A saved unit that no longer exists (knots, in
+ * older versions) falls back to the regional default via [fromName].
  */
 enum class SpeedUnit(
     val symbol: String,
@@ -17,7 +18,6 @@ enum class SpeedUnit(
     KILOMETRES_PER_HOUR("km/h", 3.6f, 0, "km", 1000.0),
     MILES_PER_HOUR("mph", 1f / 0.44704f, 0, "mi", 1609.344), // 1 mph is exactly 0.44704 m/s
     METRES_PER_SECOND("m/s", 1f, 1, "km", 1000.0),
-    KNOTS("kn", 3600f / 1852f, 0, "nmi", 1852.0), // 1 knot is exactly 1852 m per hour
     ;
 
     fun fromMetersPerSecond(metersPerSecond: Float): Float = metersPerSecond * perMetrePerSecond

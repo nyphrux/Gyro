@@ -10,6 +10,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.gyro.app.core.prefs.AccentColor
+import com.gyro.app.core.prefs.DEFAULT_CUSTOM_ACCENT
 import com.gyro.app.core.prefs.ThemeMode
 
 private val GyroShapes = Shapes(
@@ -21,25 +22,35 @@ private val GyroShapes = Shapes(
 )
 
 @Composable
-fun ThemeMode.isDark(): Boolean = when (this) {
-    ThemeMode.SYSTEM -> isSystemInDarkTheme()
-    ThemeMode.LIGHT -> false
-    ThemeMode.DARK, ThemeMode.BLACK, ThemeMode.NIGHT -> true
+fun ThemeMode.isDark(): Boolean = isDark(systemDark = isSystemInDarkTheme())
+
+/** Whether this theme is dark, given whether the system is (only SYSTEM depends on it). */
+fun ThemeMode.isDark(systemDark: Boolean): Boolean = when (this) {
+    ThemeMode.SYSTEM -> systemDark
+    ThemeMode.LIGHT, ThemeMode.PAPER, ThemeMode.CONTRAST -> false
+    ThemeMode.DARK, ThemeMode.BLACK, ThemeMode.NIGHT, ThemeMode.DIM, ThemeMode.MIDNIGHT, ThemeMode.TERMINAL -> true
 }
 
 @Composable
-fun GyroTheme(themeMode: ThemeMode = ThemeMode.SYSTEM, accent: AccentColor = AccentColor.TEAL, reducedMotion: Boolean = rememberSystemReducedMotion(), content: @Composable () -> Unit) {
+fun GyroTheme(
+    themeMode: ThemeMode = ThemeMode.SYSTEM,
+    accent: AccentColor = AccentColor.TEAL,
+    customAccent: Int = DEFAULT_CUSTOM_ACCENT,
+    reducedMotion: Boolean = rememberSystemReducedMotion(),
+    content: @Composable () -> Unit,
+) {
     val dark = themeMode.isDark()
     val context = LocalContext.current
-    val colorScheme = remember(context, themeMode, accent, dark) { gyroColorScheme(context, themeMode, accent, dark) }
-    val semanticColors = remember(context, themeMode, accent, dark) {
+    val colorScheme = remember(context, themeMode, accent, customAccent, dark) { gyroColorScheme(context, themeMode, accent, dark, customAccent) }
+    val semanticColors = remember(context, themeMode, accent, customAccent, dark) {
         val base = when {
             themeMode == ThemeMode.NIGHT -> NightSemanticColors
+            themeMode == ThemeMode.TERMINAL -> TerminalSemanticColors
             themeMode == ThemeMode.BLACK -> BlackSemanticColors
             dark -> DarkSemanticColors
             else -> LightSemanticColors
         }
-        base.copy(islandActive = islandAccent(context, themeMode, accent))
+        base.copy(islandActive = islandAccent(context, themeMode, accent, customAccent))
     }
     CompositionLocalProvider(
         LocalGyroColors provides semanticColors,

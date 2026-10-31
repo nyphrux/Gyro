@@ -41,7 +41,7 @@ class MainActivity : ComponentActivity() {
                     )
                     onDispose { }
                 }
-                GyroTheme(themeMode = prefs.themeMode, accent = prefs.accent) {
+                GyroTheme(themeMode = prefs.themeMode, accent = prefs.accent, customAccent = prefs.customAccent) {
                     GyroApp(
                         preferences = prefs,
                         requestedTool = requestedTool.value,
